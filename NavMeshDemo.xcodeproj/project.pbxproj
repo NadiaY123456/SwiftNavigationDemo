@@ -3,10 +3,15 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
+		410875F52E00733600FC5A3D /* SwiftNavigation in Frameworks */ = {isa = PBXBuildFile; productRef = 410875F42E00733600FC5A3D /* SwiftNavigation */; };
+		414D7F622E007D3600999B62 /* nav_test.bin in Resources */ = {isa = PBXBuildFile; fileRef = 414D7F612E007D3600999B62 /* nav_test.bin */; };
+		414D7F642E007FFB00999B62 /* navmeshWithIssues.bin in Resources */ = {isa = PBXBuildFile; fileRef = 414D7F632E007FFB00999B62 /* navmeshWithIssues.bin */; };
+		414D7F662E00847C00999B62 /* navmesh_16byte.bin in Resources */ = {isa = PBXBuildFile; fileRef = 414D7F652E00847C00999B62 /* navmesh_16byte.bin */; };
+		4163C9402E00A160001CA143 /* navmesh_12byte.bin in Resources */ = {isa = PBXBuildFile; fileRef = 4163C93F2E00A160001CA143 /* navmesh_12byte.bin */; };
 		4901C6662AB4F65F00FBDBF4 /* RealityKitContent in Frameworks */ = {isa = PBXBuildFile; productRef = 4901C6652AB4F65F00FBDBF4 /* RealityKitContent */; };
 		4901C6682AB4F65F00FBDBF4 /* NavMeshDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4901C6672AB4F65F00FBDBF4 /* NavMeshDemoApp.swift */; };
 		4901C66A2AB4F65F00FBDBF4 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4901C6692AB4F65F00FBDBF4 /* ContentView.swift */; };
@@ -21,6 +26,11 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		410875F22E006F3A00FC5A3D /* SwiftNavigation */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = SwiftNavigation; path = /Users/nata/GitHub/NexTaleLibraries/SwiftNavigation/SwiftNavigation; sourceTree = "<absolute>"; };
+		414D7F612E007D3600999B62 /* nav_test.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = nav_test.bin; sourceTree = "<group>"; };
+		414D7F632E007FFB00999B62 /* navmeshWithIssues.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = navmeshWithIssues.bin; sourceTree = "<group>"; };
+		414D7F652E00847C00999B62 /* navmesh_16byte.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = navmesh_16byte.bin; sourceTree = "<group>"; };
+		4163C93F2E00A160001CA143 /* navmesh_12byte.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = navmesh_12byte.bin; sourceTree = "<group>"; };
 		4901C6602AB4F65F00FBDBF4 /* NavMeshDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NavMeshDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4901C6642AB4F65F00FBDBF4 /* RealityKitContent */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = RealityKitContent; sourceTree = "<group>"; };
 		4901C6672AB4F65F00FBDBF4 /* NavMeshDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavMeshDemoApp.swift; sourceTree = "<group>"; };
@@ -41,6 +51,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				410875F52E00733600FC5A3D /* SwiftNavigation in Frameworks */,
 				4901C6662AB4F65F00FBDBF4 /* RealityKitContent in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -48,11 +59,19 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		410875F32E00733600FC5A3D /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		4901C6572AB4F65F00FBDBF4 = {
 			isa = PBXGroup;
 			children = (
 				4901C6622AB4F65F00FBDBF4 /* NavMeshDemo */,
 				4901C6632AB4F65F00FBDBF4 /* Packages */,
+				410875F32E00733600FC5A3D /* Frameworks */,
 				4901C6612AB4F65F00FBDBF4 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -83,6 +102,7 @@
 		4901C6632AB4F65F00FBDBF4 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
+				410875F22E006F3A00FC5A3D /* SwiftNavigation */,
 				4901C6642AB4F65F00FBDBF4 /* RealityKitContent */,
 			);
 			path = Packages;
@@ -108,6 +128,10 @@
 		4901C67D2AB4F9C700FBDBF4 /* Data */ = {
 			isa = PBXGroup;
 			children = (
+				4163C93F2E00A160001CA143 /* navmesh_12byte.bin */,
+				414D7F652E00847C00999B62 /* navmesh_16byte.bin */,
+				414D7F612E007D3600999B62 /* nav_test.bin */,
+				414D7F632E007FFB00999B62 /* navmeshWithIssues.bin */,
 				4901C67E2AB4F9E500FBDBF4 /* dungeon.obj */,
 				4901C67F2AB4F9E500FBDBF4 /* nav_test.obj */,
 				4901C6802AB4F9E500FBDBF4 /* undulating.obj */,
@@ -133,6 +157,7 @@
 			name = NavMeshDemo;
 			packageProductDependencies = (
 				4901C6652AB4F65F00FBDBF4 /* RealityKitContent */,
+				410875F42E00733600FC5A3D /* SwiftNavigation */,
 			);
 			productName = NavMeshDemo;
 			productReference = 4901C6602AB4F65F00FBDBF4 /* NavMeshDemo.app */;
@@ -162,6 +187,9 @@
 				Base,
 			);
 			mainGroup = 4901C6572AB4F65F00FBDBF4;
+			packageReferences = (
+				416E30B32E006AB2004B525E /* XCLocalSwiftPackageReference "../../NexTaleLibraries/SwiftNavigation" */,
+			);
 			productRefGroup = 4901C6612AB4F65F00FBDBF4 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -178,9 +206,13 @@
 			files = (
 				4901C6812AB4F9E500FBDBF4 /* dungeon.obj in Resources */,
 				4901C6832AB4F9E500FBDBF4 /* undulating.obj in Resources */,
+				4163C9402E00A160001CA143 /* navmesh_12byte.bin in Resources */,
 				4901C6822AB4F9E500FBDBF4 /* nav_test.obj in Resources */,
 				4901C6712AB4F66000FBDBF4 /* Preview Assets.xcassets in Resources */,
 				4901C66E2AB4F66000FBDBF4 /* Assets.xcassets in Resources */,
+				414D7F662E00847C00999B62 /* navmesh_16byte.bin in Resources */,
+				414D7F622E007D3600999B62 /* nav_test.bin in Resources */,
+				414D7F642E007FFB00999B62 /* navmeshWithIssues.bin in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -342,6 +374,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "xros xrsimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_INTEROP_MODE = objcxx;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
 			};
@@ -368,6 +401,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "xros xrsimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_INTEROP_MODE = objcxx;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
 			};
@@ -396,7 +430,18 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		416E30B32E006AB2004B525E /* XCLocalSwiftPackageReference "../../NexTaleLibraries/SwiftNavigation" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../NexTaleLibraries/SwiftNavigation;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
+		410875F42E00733600FC5A3D /* SwiftNavigation */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = SwiftNavigation;
+		};
 		4901C6652AB4F65F00FBDBF4 /* RealityKitContent */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = RealityKitContent;
