@@ -1,6 +1,15 @@
 {
   "pins" : [
     {
+      "identity" : "delaunayswift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/AlexLittlejohn/DelaunaySwift.git",
+      "state" : {
+        "revision" : "5738c6a3b140d990a5dd89fe50d0cae933268bda",
+        "version" : "1.0.0"
+      }
+    },
+    {
       "identity" : "swift-docc-plugin",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-docc-plugin",
@@ -16,6 +25,15 @@
       "state" : {
         "revision" : "b45d1f2ed151d057b54504d653e0da5552844e34",
         "version" : "1.0.0"
+      }
+    },
+    {
+      "identity" : "swiftsimplify",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/malcommac/SwiftSimplify.git",
+      "state" : {
+        "revision" : "d4cbe1889c7b650b4753d1ec681e9967588995f7",
+        "version" : "1.1.1"
       }
     }
   ],

@@ -56,9 +56,48 @@ struct ContentView: View {
 //                        print("Unknown polygon reference size: \(MemoryLayout<dtPolyRef>.size)")
 //                    }
 
+                    // Generate mesh from red channel of splat.png
+                    
+                    // Generate mesh from image
+                    if let result = await generateMeshFromImage(
+                        named: "splat.png",
+                        channel: .green,
+                        maxEdgeLength: 50.0,
+                        simplificationTolerance: 0.0001,
+                        threshold: 0.05
+                    ) {
+                        let (vertices, indices) = result
+                                    
+                        // Create mesh entity
+                        if let meshEntity = createMeshEntity(
+                            vertices: vertices,
+                            indices: indices,
+                            scale: 0.005, // 0.5mm per pixel for a ~1m wide result
+                            color: .green
+                        ) {
+                            meshEntity.name = "SplatMesh"
+                                        
+                            // Position it in front of the user
+                            meshEntity.position = SIMD3<Float>(0, 1.5, -2) // 1.5m high, 2m forward
+                                        
+                            spaceOrigin.addChild(meshEntity)
+                        }
+                                    
+//                        // Optional: Add debug vertices to see the mesh points
+//                        let debugVertices = createDebugVertexEntity(
+//                            vertices: vertices,
+//                            scale: 0.0005,
+//                            vertexSize: 0.005 // 5mm spheres
+//                        )
+//                        debugVertices.position = SIMD3<Float>(0, 1.5, -2)
+//                        debugVertices.name = "DebugVertices"
+//                        spaceOrigin.addChild(debugVertices)
+                    }
+                    
+                    
                     do {
 //                        try testCustomAreaLoader()
-#if true
+#if false
                         let selectedMesh = "plane2"
 
 //                        try debugBinFindPath(selectedMesh: selectedMesh)
