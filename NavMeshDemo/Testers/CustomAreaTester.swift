@@ -19,18 +19,35 @@ func testCustomAreaLoader() throws -> NavMesh? {
     print("Loading road mesh: \(roadMeshFile)")
     let roadMeshData = try ObjMeshLoader(file: "/Users/nata/GitHub/Practicing/SwiftNavigationDemo/NavMeshDemo/Data/\(roadMeshFile)")
     
+    // Define multiple areas
+    let areas = [
+//        NavMeshBuilder.AreaDefinition(
+//            vertices: grassMesh.vertices,
+//            triangles: grassMesh.triangles,
+//            areaCode: NavMeshAreaCode.grass
+//        ),
+        NavMeshBuilder.AreaDefinition(
+            vertices: roadMeshData.vertices,
+            triangles: roadMeshData.triangles,
+            areaCode: NavMeshAreaCode.road
+        ),
+//        NavMeshBuilder.AreaDefinition(
+//            vertices: waterMesh.vertices,
+//            triangles: waterMesh.triangles,
+//            areaCode: NavMeshAreaCode.water
+//        )
+    ]
+    
     do {
         let config = NavMeshBuilder.Config(partitionStyle: .monotone)
         
         print("Building NavMesh with custom road areas...")
+        // Build nav mesh with all areas
         let navMesh = try NavMeshBuilder(
             vertices: mainMeshData.vertices,
             triangles: mainMeshData.triangles,
-            areaVertices: roadMeshData.vertices,
-            areaTriangles: roadMeshData.triangles,
-            areaCode: NavMeshAreaCode.road, // Mark as road area (code: 2)
-            config: config,
-            debug: true // Enable debug output to see the process
+            areas: areas,
+            config: config
         )
         
         print("Creating navigator...")
