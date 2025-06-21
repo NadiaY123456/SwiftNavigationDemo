@@ -5,58 +5,119 @@
 //  Created by Nadia Yilmaz on 6/20/25.
 //
 
+import RealityKit
 import UIKit
 
-// MARK: - Usage Example
-
-/// Generates a mesh from an image using a specific color channel
-/// - Parameters:
-///   - imageName: Name of the image file (e.g., "splat.png")
-///   - channel: Which channel to extract (.red, .green, .blue, .alpha, or .grayscale)
-///   - maxEdgeLength: Maximum edge length in image-space points (default: 20.0)
-///   - simplificationTolerance: Simplification tolerance as fraction of image size (default: 0.01)
-///   - threshold: Binary threshold 0-1, nil for auto (default: 0.5)
-///   - invertMask: Whether to invert the binary mask (default: false)
-/// - Returns: Tuple of (vertices, indices) or nil if generation fails
+/// Handy wrapper that loads a UIImage, runs `SplatMeshGenerator`,
+/// prints some stats, and hands the full 2-D mesh bundle back.
+///
+/// - Returns: `MeshResult2D` (vertices + indices + imageSize) or `nil` on failure.
 @MainActor
-public func generateMeshFromImage(
+func generateMeshFromImage(
     named imageName: String,
     channel: SplatMeshGenerator.Channel = .red,
     maxEdgeLength: CGFloat = 1.0,
     simplificationTolerance: CGFloat = 0.01,
     threshold: Float? = 0.1,
     invertMask: Bool = false
-) async -> (vertices: [SIMD2<Float>], indices: [UInt32])? {
-    
-    // Load the image
+) async -> MeshResult2D? {
     guard let image = UIImage(named: imageName) else {
-        print("Failed to load image: \(imageName)")
+        print("❌  Failed to load image “\(imageName)”")
         return nil
     }
-    
-    // Create mesh generator with specified parameters
+
+    print("Using channel=\(channel)  threshold=\(threshold ?? -1)  invertMask=\(invertMask)")
+
     let meshGen = SplatMeshGenerator(
-        maxEdgeLength: 50,
-        simplificationTolerance: 0.0001,
-        threshold: 0.25,          // tweak until the mask looks right
-        channel: .green,
-        invertMask: true          // <- key line
+        maxEdgeLength: maxEdgeLength,
+        simplificationTolerance: simplificationTolerance,
+        threshold: threshold,
+        channel: channel,
+        invertMask: invertMask
     )
 
-    
-    // Generate mesh
     do {
-        let (vertices, indices) = try await meshGen.mesh(from: image)
-        
-        print("Successfully generated mesh from \(imageName) [\(channel)]:")
-        print("  - Vertices: \(vertices.count)")
-        print("  - Triangles: \(indices.count / 3)")
-        print("  - Image size: \(image.size.width) x \(image.size.height)")
-        
-        return (vertices, indices)
-        
+        let mesh2D = try await meshGen.mesh(from: image) // ← now returns MeshResult2D
+
+        print("✅  Generated mesh from \(imageName) [\(channel)]:")
+        print("   • Vertices  : \(mesh2D.vertices.count)")
+        print("   • Triangles : \(mesh2D.indices.count / 3)")
+        print("   • Image size: \(mesh2D.imageSize.width) × \(mesh2D.imageSize.height)")
+
+        return mesh2D
+
     } catch {
-        print("Mesh generation failed for \(imageName): \(error)")
+        print("❌  Mesh generation failed for \(imageName): \(error)")
         return nil
+    }
+}
+
+@MainActor
+func generateSplatModel(
+    terrainName: String,
+    splatName imageName: String,
+    channel: SplatMeshGenerator.Channel = .red,
+    maxEdgeLength: CGFloat = 1.0,
+    simplificationTolerance: CGFloat = 0.01,
+    threshold: Float? = 0.1,
+    invertMask: Bool = false
+) async throws {
+    // Generate the 2-D splat mesh ---------------------------------------------------
+    if let mesh2D = await generateMeshFromImage(
+        named: imageName,
+        channel: channel,
+        maxEdgeLength: maxEdgeLength,
+        simplificationTolerance: simplificationTolerance,
+        threshold: threshold,
+        invertMask: invertMask
+    ) {
+        // 0️⃣ Load the terrain model -------------------------------------------------
+        let myModelEntity: ModelEntity
+        do {
+            myModelEntity = try await ModelEntity(named: "foothill")
+            myModelEntity.scale = [1, 1, 1]
+            print("Loaded model at pos \(myModelEntity.position), scale \(myModelEntity.scale)")
+
+        } catch {
+            print("❌  Error loading foothill.usdz: \(error)")
+            return
+        }
+
+        // 1️⃣ Convert 2-D → 3-D using ObjMeshLoader ---------------------------------
+        let meshLoader = ObjMeshLoader(splatMesh2D: mesh2D, terrainModel: myModelEntity)
+
+        // 2️⃣ (Optional) write the OBJ to disk --------------------------------------
+        let outURL = URL(fileURLWithPath:
+            "/Users/nata/Library/CloudStorage/OneDrive-Personal/CNC/VisionPro/World/splat.obj")
+        try? meshLoader.writeOBJ(to: outURL)
+
+        // 3️⃣ Create a RealityKit mesh entity for visual feedback -------------------
+        let scale: Float = 0.01
+        let height: Float = -330 - 10
+        let zDistance: Float = -600
+        
+        
+
+        let indices: [UInt32] = meshLoader.triangles.map { UInt32($0) }
+
+        if let meshEntity = createMeshEntity(vertices: meshLoader.vertices,
+                                             indices: indices,
+                                             scale: 1.0, // already mapped → model space
+                                             color: .blue)
+        {
+            meshEntity.name = "SplatMesh"
+            // Position it above the terrain
+
+            meshEntity.scale = SIMD3<Float>(scale, scale, scale)
+            meshEntity.position.y += 0.3 + height * scale
+            meshEntity.position.z += zDistance * scale
+            spaceOrigin.addChild(meshEntity)
+        }
+
+        // 4️⃣ Add terrain model to RealityKit
+        myModelEntity.scale = SIMD3<Float>(scale, scale, scale)
+        myModelEntity.position.y += height * scale
+        myModelEntity.position.z += zDistance * scale
+//        spaceOrigin.addChild(myModelEntity)
     }
 }

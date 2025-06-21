@@ -26,9 +26,9 @@ import UIKit
 /// - Returns: An Entity containing the mesh and optionally edge wireframes
 @MainActor
 public func createMeshEntity(
-    vertices: [SIMD2<Float>],
+    vertices: [SIMD3<Float>],
     indices: [UInt32],
-    scale: Float = 0.001,
+    scale: Float = 1,
     color: UIColor = UIColor.green.withAlphaComponent(0.35),
     showEdges: Bool = true,
     edgeRadius: Float = 0.005,
@@ -44,13 +44,7 @@ public func createMeshEntity(
     parent.name = "MeshVisualization"
     
     // Convert 2D vertices to 3D by adding Z=0 and applying scale
-    let vertices3D = vertices.map { vertex2D in
-        SIMD3<Float>(
-            vertex2D.x * scale - 1.024, // Center a 2048px image
-            vertex2D.y * scale - 1.024,
-            0.0 // Flat on the XY plane
-        )
-    }
+    let vertices3D = vertices
     
     // Create main mesh surface
     let meshEntity = createSurfaceMesh(vertices3D: vertices3D, indices: indices, color: color)
@@ -87,8 +81,18 @@ private func createSurfaceMesh(
     // Set positions
     meshDescriptor.positions = MeshBuffer(vertices3D)
     
+    // Reverse the winding order to make the mesh visible from the front
+    var reversedIndices: [UInt32] = []
+    for i in stride(from: 0, to: indices.count, by: 3) {
+        guard i + 2 < indices.count else { continue }
+        // Reverse winding order: (i0, i1, i2) -> (i0, i2, i1)
+        reversedIndices.append(indices[i])
+        reversedIndices.append(indices[i + 2])
+        reversedIndices.append(indices[i + 1])
+    }
+    
     // Set indices (primitives)
-    meshDescriptor.primitives = .triangles(indices)
+    meshDescriptor.primitives = .triangles(reversedIndices)
     
     // Generate normals (all pointing in +Z direction for a flat mesh)
     let normals = [SIMD3<Float>](repeating: SIMD3<Float>(0, 0, 1), count: vertices3D.count)

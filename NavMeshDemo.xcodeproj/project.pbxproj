@@ -19,9 +19,12 @@
 		4182F5012E05C03F0053D065 /* SplatMeshGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4182F5002E05C03F0053D065 /* SplatMeshGenerator.swift */; };
 		4182F5042E05C09A0053D065 /* SwiftSimplify in Frameworks */ = {isa = PBXBuildFile; productRef = 4182F5032E05C09A0053D065 /* SwiftSimplify */; };
 		4182F5072E05C1F20053D065 /* DelaunayTriangulation in Frameworks */ = {isa = PBXBuildFile; productRef = 4182F5062E05C1F20053D065 /* DelaunayTriangulation */; };
-		4182F5092E05C7990053D065 /* splat.png in Resources */ = {isa = PBXBuildFile; fileRef = 4182F5082E05C7990053D065 /* splat.png */; };
 		4182F50B2E05C9450053D065 /* SplatTester.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4182F50A2E05C93C0053D065 /* SplatTester.swift */; };
 		4182F50D2E05D6E20053D065 /* SplatMeshVisualizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4182F50C2E05D6D40053D065 /* SplatMeshVisualizer.swift */; };
+		4192045C2E05F9C800C46304 /* splat_greyscale.png in Resources */ = {isa = PBXBuildFile; fileRef = 4192045B2E05F9C800C46304 /* splat_greyscale.png */; };
+		4192045E2E05FD1400C46304 /* splat_greyscale_4m.png in Resources */ = {isa = PBXBuildFile; fileRef = 4192045D2E05FD1400C46304 /* splat_greyscale_4m.png */; };
+		419204602E05FE0500C46304 /* splat_rgba.png in Resources */ = {isa = PBXBuildFile; fileRef = 4192045F2E05FE0500C46304 /* splat_rgba.png */; };
+		419204622E0618F800C46304 /* foothill.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 419204612E0618F800C46304 /* foothill.usdz */; };
 		41E36E182E0536A7004C6058 /* planeSmall.obj in Resources */ = {isa = PBXBuildFile; fileRef = 41E36E172E0536A7004C6058 /* planeSmall.obj */; };
 		41E36E1A2E0536C3004C6058 /* plane.obj in Resources */ = {isa = PBXBuildFile; fileRef = 41E36E192E0536C3004C6058 /* plane.obj */; };
 		41E36E1C2E0536FD004C6058 /* CustomAreaTester.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41E36E1B2E0536F1004C6058 /* CustomAreaTester.swift */; };
@@ -52,9 +55,12 @@
 		414DBD292E033F5300B3A142 /* plane2.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = plane2.bin; sourceTree = "<group>"; };
 		4163C93F2E00A160001CA143 /* navmesh_12byte.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = navmesh_12byte.bin; sourceTree = "<group>"; };
 		4182F5002E05C03F0053D065 /* SplatMeshGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplatMeshGenerator.swift; sourceTree = "<group>"; };
-		4182F5082E05C7990053D065 /* splat.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = splat.png; sourceTree = "<group>"; };
 		4182F50A2E05C93C0053D065 /* SplatTester.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplatTester.swift; sourceTree = "<group>"; };
 		4182F50C2E05D6D40053D065 /* SplatMeshVisualizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplatMeshVisualizer.swift; sourceTree = "<group>"; };
+		4192045B2E05F9C800C46304 /* splat_greyscale.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = splat_greyscale.png; sourceTree = "<group>"; };
+		4192045D2E05FD1400C46304 /* splat_greyscale_4m.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = splat_greyscale_4m.png; sourceTree = "<group>"; };
+		4192045F2E05FE0500C46304 /* splat_rgba.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = splat_rgba.png; sourceTree = "<group>"; };
+		419204612E0618F800C46304 /* foothill.usdz */ = {isa = PBXFileReference; lastKnownFileType = file; path = foothill.usdz; sourceTree = "<group>"; };
 		41E36E172E0536A7004C6058 /* planeSmall.obj */ = {isa = PBXFileReference; lastKnownFileType = text; path = planeSmall.obj; sourceTree = "<group>"; };
 		41E36E192E0536C3004C6058 /* plane.obj */ = {isa = PBXFileReference; lastKnownFileType = text; path = plane.obj; sourceTree = "<group>"; };
 		41E36E1B2E0536F1004C6058 /* CustomAreaTester.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomAreaTester.swift; sourceTree = "<group>"; };
@@ -181,9 +187,9 @@
 		4901C6782AB4F84A00FBDBF4 /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
-				4182F5002E05C03F0053D065 /* SplatMeshGenerator.swift */,
 				4901C6792AB4F86000FBDBF4 /* ObjMeshLoader.swift */,
 				4901C67B2AB4F8A600FBDBF4 /* FakeRandom.swift */,
+				4182F5002E05C03F0053D065 /* SplatMeshGenerator.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -191,8 +197,10 @@
 		4901C67D2AB4F9C700FBDBF4 /* Data */ = {
 			isa = PBXGroup;
 			children = (
-				4182F5082E05C7990053D065 /* splat.png */,
+				419204612E0618F800C46304 /* foothill.usdz */,
+				4192045D2E05FD1400C46304 /* splat_greyscale_4m.png */,
 				41E36E242E0541D1004C6058 /* planeLarge.obj */,
+				4192045F2E05FE0500C46304 /* splat_rgba.png */,
 				414DBD272E03362A00B3A142 /* plane.usdz */,
 				414DBD292E033F5300B3A142 /* plane2.bin */,
 				414DBD252E032EAC00B3A142 /* plane.bin */,
@@ -205,6 +213,7 @@
 				4901C67E2AB4F9E500FBDBF4 /* dungeon.obj */,
 				4901C67F2AB4F9E500FBDBF4 /* nav_test.obj */,
 				4901C6802AB4F9E500FBDBF4 /* undulating.obj */,
+				4192045B2E05F9C800C46304 /* splat_greyscale.png */,
 			);
 			path = Data;
 			sourceTree = "<group>";
@@ -279,16 +288,19 @@
 			buildActionMask = 2147483647;
 			files = (
 				414DBD262E032EAC00B3A142 /* plane.bin in Resources */,
-				4182F5092E05C7990053D065 /* splat.png in Resources */,
 				414DBD282E03362A00B3A142 /* plane.usdz in Resources */,
 				41E36E1A2E0536C3004C6058 /* plane.obj in Resources */,
 				41E36E252E0541D1004C6058 /* planeLarge.obj in Resources */,
 				4901C6812AB4F9E500FBDBF4 /* dungeon.obj in Resources */,
+				4192045C2E05F9C800C46304 /* splat_greyscale.png in Resources */,
 				4901C6832AB4F9E500FBDBF4 /* undulating.obj in Resources */,
+				419204602E05FE0500C46304 /* splat_rgba.png in Resources */,
 				4163C9402E00A160001CA143 /* navmesh_12byte.bin in Resources */,
 				4901C6822AB4F9E500FBDBF4 /* nav_test.obj in Resources */,
+				4192045E2E05FD1400C46304 /* splat_greyscale_4m.png in Resources */,
 				4901C6712AB4F66000FBDBF4 /* Preview Assets.xcassets in Resources */,
 				4901C66E2AB4F66000FBDBF4 /* Assets.xcassets in Resources */,
+				419204622E0618F800C46304 /* foothill.usdz in Resources */,
 				41E36E182E0536A7004C6058 /* planeSmall.obj in Resources */,
 				414D7F662E00847C00999B62 /* navmesh_16byte.bin in Resources */,
 				414D7F622E007D3600999B62 /* nav_test.bin in Resources */,
