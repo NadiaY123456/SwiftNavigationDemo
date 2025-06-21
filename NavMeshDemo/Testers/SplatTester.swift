@@ -55,6 +55,7 @@ func generateMeshFromImage(
 @MainActor
 func generateSplatModel(
     terrainName: String,
+    terrainRotation: simd_quatf = simd_quatf(angle: 0, axis: [0, 1, 0]),
     splatName imageName: String,
     channel: SplatMeshGenerator.Channel = .red,
     maxEdgeLength: CGFloat = 1.0,
@@ -84,7 +85,7 @@ func generateSplatModel(
         }
 
         // 1️⃣ Convert 2-D → 3-D using ObjMeshLoader ---------------------------------
-        let meshLoader = ObjMeshLoader(splatMesh2D: mesh2D, terrainModel: myModelEntity)
+        let meshLoader = ObjMeshLoader(splatMesh2D: mesh2D, terrainModel: myModelEntity, terrainRotation: terrainRotation)
 
         // 2️⃣ (Optional) write the OBJ to disk --------------------------------------
         let outURL = URL(fileURLWithPath:
@@ -95,7 +96,6 @@ func generateSplatModel(
         let scale: Float = 0.01
         let height: Float = -330 - 10
         let zDistance: Float = -600
-        
         
 
         let indices: [UInt32] = meshLoader.triangles.map { UInt32($0) }
@@ -109,7 +109,7 @@ func generateSplatModel(
             // Position it above the terrain
 
             meshEntity.scale = SIMD3<Float>(scale, scale, scale)
-            meshEntity.position.y += 0.3 + height * scale
+            meshEntity.position.y += 1 * scale + height * scale
             meshEntity.position.z += zDistance * scale
             spaceOrigin.addChild(meshEntity)
         }
@@ -118,6 +118,10 @@ func generateSplatModel(
         myModelEntity.scale = SIMD3<Float>(scale, scale, scale)
         myModelEntity.position.y += height * scale
         myModelEntity.position.z += zDistance * scale
-//        spaceOrigin.addChild(myModelEntity)
+        
+        // change rotation
+        myModelEntity.orientation = terrainRotation
+        
+        spaceOrigin.addChild(myModelEntity)
     }
 }

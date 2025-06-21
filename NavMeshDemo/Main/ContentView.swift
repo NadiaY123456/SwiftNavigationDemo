@@ -59,12 +59,13 @@ struct ContentView: View {
                     do {
                         try await generateSplatModel(
                             terrainName: "foothill",
+                            terrainRotation: simd_quatf(angle: .pi / 2, axis: [0, 1, 0]),
                             splatName: "splat_rgba.png",
                             channel: .blue,
                             maxEdgeLength: 50,
                             simplificationTolerance: 0.0001,
                             threshold: 0.05, // nil, // auto-threshold
-                            invertMask: false
+                            invertMask: true
                         )
 #if false
                         let selectedMesh = "plane2"

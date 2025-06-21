@@ -35,7 +35,7 @@ final class ObjMeshLoader {
     var normals: [SIMD3<Float>] = []
     var triangles: [Int32] = []
 
-    // MARK: - - Designated “empty” init --------------------------------------------
+    // MARK: - - Designated "empty" init --------------------------------------------
 
     init() { /* intentionally blank */ }
 
@@ -43,24 +43,29 @@ final class ObjMeshLoader {
 
     convenience init(file: String) throws {
         self.init()
-        try parseOBJ(String(contentsOfFile: file))
+        try parseOBJ(String(contentsOfFile: file, encoding: .utf8))
     }
 
     // MARK: - - Path B — build from 2-D X-Z vertices + a RealityKit model ----------
 
     // Build 3D splat mesh that overlays the terrain
-    convenience init(splatMesh2D: MeshResult2D, terrainModel: ModelEntity) {
+    convenience init(splatMesh2D: MeshResult2D, terrainModel: ModelEntity, terrainRotation: simd_quatf? = nil) {
         self.init()
         
         print("\n=== Building Splat Mesh Overlay ===")
         print("Splat vertices count: \(splatMesh2D.vertices.count)")
         print("Splat image size: \(splatMesh2D.imageSize.width) x \(splatMesh2D.imageSize.height)")
         
+        if let rotation = terrainRotation {
+            print("Applying terrain rotation: \(rotation)")
+        }
+        
         // 1. Map splat pixel coordinates to terrain's local space
         let terrainSpaceXZ = ObjMeshLoader.mapSplatPixelsToTerrainSpace(
             splatMesh2D.vertices,
             imageSize: splatMesh2D.imageSize,
-            onto: terrainModel
+            onto: terrainModel,
+            rotation: terrainRotation
         )
         
         print("\nMapped splat vertices to terrain space")
@@ -71,7 +76,11 @@ final class ObjMeshLoader {
         
         // 2. Sample terrain heights at each splat vertex position
         print("\nSampling terrain heights at \(terrainSpaceXZ.count) positions...")
-        let heightSamples = ObjMeshLoader.sampleTerrainHeights(at: terrainSpaceXZ, on: terrainModel)
+        let heightSamples = ObjMeshLoader.sampleTerrainHeights(
+            at: terrainSpaceXZ,
+            on: terrainModel,
+            rotation: terrainRotation
+        )
         
         // Convert optional heights to default value of 0
         let heights = heightSamples.map { $0 ?? 0.0 }
@@ -127,7 +136,7 @@ final class ObjMeshLoader {
         let yCoords: [Float]
         let zCoords: [Float]
         
-        init(from terrainModel: ModelEntity) {
+        init(from terrainModel: ModelEntity, rotation: simd_quatf? = nil) {
             guard let mesh = terrainModel.model?.mesh else {
                 self.vertices = []
                 self.xCoords = []
@@ -151,54 +160,46 @@ final class ObjMeshLoader {
                 return
             }
             
+            // Apply rotation if provided
+            let transformedVertices: [SIMD3<Float>]
+            if let rotation = rotation {
+                transformedVertices = localVertices.map { vertex in
+                    let rotated = rotation.act(vertex)
+                    return rotated
+                }
+            } else {
+                transformedVertices = localVertices
+            }
+            
             // Extract coordinates for Accelerate
-            let vertexCount = localVertices.count
+            let vertexCount = transformedVertices.count
             var xCoordsLocal = [Float](repeating: 0, count: vertexCount)
             var yCoordsLocal = [Float](repeating: 0, count: vertexCount)
             var zCoordsLocal = [Float](repeating: 0, count: vertexCount)
             
-            for (i, v) in localVertices.enumerated() {
+            for (i, v) in transformedVertices.enumerated() {
                 xCoordsLocal[i] = v.x
                 yCoordsLocal[i] = v.y
                 zCoordsLocal[i] = v.z
             }
             
-            self.vertices = localVertices
+            self.vertices = transformedVertices
             self.xCoords = xCoordsLocal
             self.yCoords = yCoordsLocal
             self.zCoords = zCoordsLocal
         }
     }
 
-    // Get terrain bounds in local space
-    static func getTerrainBoundsInLocalSpace(for terrainModel: ModelEntity) -> MeshBounds? {
-        let meshData = TerrainMeshData(from: terrainModel)
-        
-        guard !meshData.vertices.isEmpty else {
-            return nil
-        }
-        
-        let vertexCount = meshData.vertices.count
-        
-        // Calculate local-space bounds
-        var minX: Float = 0, maxX: Float = 0
-        var minZ: Float = 0, maxZ: Float = 0
-        
-        vDSP_minv(meshData.xCoords, 1, &minX, vDSP_Length(vertexCount))
-        vDSP_maxv(meshData.xCoords, 1, &maxX, vDSP_Length(vertexCount))
-        vDSP_minv(meshData.zCoords, 1, &minZ, vDSP_Length(vertexCount))
-        vDSP_maxv(meshData.zCoords, 1, &maxZ, vDSP_Length(vertexCount))
-        
-        return MeshBounds(minX: minX, maxX: maxX, minZ: minZ, maxZ: maxZ)
-    }
-
     // Sample terrain height at given x,z position in local space
-    static func sampleTerrainHeight(at localXZ: SIMD2<Float>, on terrainModel: ModelEntity) -> Float? {
-        let meshData = TerrainMeshData(from: terrainModel)
+    static func sampleTerrainHeight(at localXZ: SIMD2<Float>, on terrainModel: ModelEntity, rotation: simd_quatf? = nil) -> Float? {
+        let meshData = TerrainMeshData(from: terrainModel, rotation: rotation)
         
         guard !meshData.vertices.isEmpty else {
             return nil
         }
+        
+        // If rotation is provided, we need to rotate the query point to match the rotated terrain
+        let queryXZ = localXZ
         
         let vertexCount = meshData.vertices.count
         var distances = [Float](repeating: 0, count: vertexCount)
@@ -208,12 +209,12 @@ final class ObjMeshLoader {
         var diffZ = [Float](repeating: 0, count: vertexCount)
         
         // X differences
-        vDSP_vfill([localXZ.x], &diffX, 1, vDSP_Length(vertexCount))
+        vDSP_vfill([queryXZ.x], &diffX, 1, vDSP_Length(vertexCount))
         vDSP_vsub(meshData.xCoords, 1, diffX, 1, &diffX, 1, vDSP_Length(vertexCount))
         vDSP_vsq(diffX, 1, &diffX, 1, vDSP_Length(vertexCount))
         
         // Z differences
-        vDSP_vfill([localXZ.y], &diffZ, 1, vDSP_Length(vertexCount))
+        vDSP_vfill([queryXZ.y], &diffZ, 1, vDSP_Length(vertexCount))
         vDSP_vsub(meshData.zCoords, 1, diffZ, 1, &diffZ, 1, vDSP_Length(vertexCount))
         vDSP_vsq(diffZ, 1, &diffZ, 1, vDSP_Length(vertexCount))
         
@@ -229,14 +230,17 @@ final class ObjMeshLoader {
     }
 
     // Batch sample multiple heights at once
-    static func sampleTerrainHeights(at localXZPositions: [SIMD2<Float>], on terrainModel: ModelEntity) -> [Float?] {
-        let meshData = TerrainMeshData(from: terrainModel)
+    static func sampleTerrainHeights(at localXZPositions: [SIMD2<Float>], on terrainModel: ModelEntity, rotation: simd_quatf? = nil) -> [Float?] {
+        let meshData = TerrainMeshData(from: terrainModel, rotation: rotation)
         
         guard !meshData.vertices.isEmpty else {
             return Array(repeating: nil, count: localXZPositions.count)
         }
         
         return localXZPositions.map { xz in
+            // If rotation is provided, we need to rotate the query point to match the rotated terrain
+            let queryXZ = xz
+            
             let vertexCount = meshData.vertices.count
             var distances = [Float](repeating: 0, count: vertexCount)
             
@@ -245,12 +249,12 @@ final class ObjMeshLoader {
             var diffZ = [Float](repeating: 0, count: vertexCount)
             
             // X differences
-            vDSP_vfill([xz.x], &diffX, 1, vDSP_Length(vertexCount))
+            vDSP_vfill([queryXZ.x], &diffX, 1, vDSP_Length(vertexCount))
             vDSP_vsub(meshData.xCoords, 1, diffX, 1, &diffX, 1, vDSP_Length(vertexCount))
             vDSP_vsq(diffX, 1, &diffX, 1, vDSP_Length(vertexCount))
             
             // Z differences
-            vDSP_vfill([xz.y], &diffZ, 1, vDSP_Length(vertexCount))
+            vDSP_vfill([queryXZ.y], &diffZ, 1, vDSP_Length(vertexCount))
             vDSP_vsub(meshData.zCoords, 1, diffZ, 1, &diffZ, 1, vDSP_Length(vertexCount))
             vDSP_vsq(diffZ, 1, &diffZ, 1, vDSP_Length(vertexCount))
             
@@ -269,73 +273,63 @@ final class ObjMeshLoader {
     // Map pixel coordinates from splat map to terrain's local space
     static func mapSplatPixelsToTerrainSpace(_ pixelVerts: [SIMD2<Float>],
                                              imageSize: CGSize,
-                                             onto terrainModel: ModelEntity) -> [SIMD2<Float>]
+                                             onto terrainModel: ModelEntity,
+                                             rotation: simd_quatf? = nil) -> [SIMD2<Float>]
     {
-        // Method 1: RealityKit visual bounds
+        // Get visual bounds
         let visualBounds = terrainModel.visualBounds(relativeTo: terrainModel)
-        let visualMin = visualBounds.min
-        let visualExtents = visualBounds.extents
+        var visualMin = visualBounds.min
+        var visualExtents = visualBounds.extents
         
-        // Method 2: Calculate actual mesh bounds in local space
-        var meshBounds: MeshBounds?
-        if let calculatedBounds = getTerrainBoundsInLocalSpace(for: terrainModel) {
-            meshBounds = calculatedBounds
+        // If rotation is provided, we need to transform the bounds
+        if let rotation = rotation {
+            // Get all 8 corners of the bounding box
+            let corners = [
+                SIMD3<Float>(visualMin.x, visualMin.y, visualMin.z),
+                SIMD3<Float>(visualMin.x + visualExtents.x, visualMin.y, visualMin.z),
+                SIMD3<Float>(visualMin.x, visualMin.y + visualExtents.y, visualMin.z),
+                SIMD3<Float>(visualMin.x + visualExtents.x, visualMin.y + visualExtents.y, visualMin.z),
+                SIMD3<Float>(visualMin.x, visualMin.y, visualMin.z + visualExtents.z),
+                SIMD3<Float>(visualMin.x + visualExtents.x, visualMin.y, visualMin.z + visualExtents.z),
+                SIMD3<Float>(visualMin.x, visualMin.y + visualExtents.y, visualMin.z + visualExtents.z),
+                SIMD3<Float>(visualMin.x + visualExtents.x, visualMin.y + visualExtents.y, visualMin.z + visualExtents.z)
+            ]
             
-            // Print comparison
-            print("\n=== Terrain Bounds Comparison ===")
-            print("Visual Bounds (RealityKit):")
-            print("  Min: (\(visualMin.x), \(visualMin.z))")
-            print("  Max: (\(visualMin.x + visualExtents.x), \(visualMin.z + visualExtents.z))")
-            print("  Extents: (\(visualExtents.x), \(visualExtents.z))")
+            // Rotate all corners
+            let rotatedCorners = corners.map { rotation.act($0) }
             
-            print("\nMesh Bounds (Calculated from vertices):")
-            print("  Min: (\(calculatedBounds.minX), \(calculatedBounds.minZ))")
-            print("  Max: (\(calculatedBounds.maxX), \(calculatedBounds.maxZ))")
-            print("  Extents: (\(calculatedBounds.maxX - calculatedBounds.minX), \(calculatedBounds.maxZ - calculatedBounds.minZ))")
+            // Find new bounds from rotated corners
+            var newMin = rotatedCorners[0]
+            var newMax = rotatedCorners[0]
             
-            print("\nDifferences:")
-            print("  Min X diff: \(abs(visualMin.x - calculatedBounds.minX))")
-            print("  Min Z diff: \(abs(visualMin.z - calculatedBounds.minZ))")
-            print("  Extent X diff: \(abs(visualExtents.x - (calculatedBounds.maxX - calculatedBounds.minX)))")
-            print("  Extent Z diff: \(abs(visualExtents.z - (calculatedBounds.maxZ - calculatedBounds.minZ)))")
-            print("========================\n")
-        } else {
-            print("Warning: Could not calculate mesh bounds from vertices")
+            for corner in rotatedCorners {
+                newMin.x = min(newMin.x, corner.x)
+                newMin.y = min(newMin.y, corner.y)
+                newMin.z = min(newMin.z, corner.z)
+                newMax.x = max(newMax.x, corner.x)
+                newMax.y = max(newMax.y, corner.y)
+                newMax.z = max(newMax.z, corner.z)
+            }
+            
+            visualMin = newMin
+            visualExtents = newMax - newMin
         }
         
-        // Use calculated mesh bounds for more accurate mapping
-        let minX: Float
-        let minZ: Float
-        let extentX: Float
-        let extentZ: Float
-        
-        if let bounds = meshBounds {
-            minX = bounds.minX
-            minZ = bounds.minZ
-            extentX = bounds.maxX - bounds.minX
-            extentZ = bounds.maxZ - bounds.minZ
-            print("Using calculated mesh bounds for mapping splat to terrain")
-        } else {
-            // Fallback to visual bounds
-            minX = visualMin.x
-            minZ = visualMin.z
-            extentX = visualExtents.x
-            extentZ = visualExtents.z
-            print("Using visual bounds for mapping (fallback)")
-        }
+        print("\nTerrain bounds - X: [\(visualMin.x), \(visualMin.x + visualExtents.x)]")
+        print("Terrain bounds - Z: [\(visualMin.z), \(visualMin.z + visualExtents.z)]")
         
         // Scale factors to stretch splat image to terrain dimensions
-        let scaleX = extentX / Float(imageSize.width)
-        let scaleZ = extentZ / Float(imageSize.height)
+        let scaleX = visualExtents.x / Float(imageSize.width)
+        let scaleZ = visualExtents.z / Float(imageSize.height)
         
         print("Scale factors - X: \(scaleX), Z: \(scaleZ)")
         
         return pixelVerts.map { pixelCoord in
             // Map pixel coordinates to terrain's local space
-            // Note: Image Y goes down, but Z typically goes forward, so we flip Y
+            // Note: Y is already flipped in SplatMeshGenerator to match RealityKit
             SIMD2<Float>(
-                minX + pixelCoord.x * scaleX,
-                minZ + (Float(imageSize.height) - pixelCoord.y) * scaleZ
+                visualMin.x + pixelCoord.x * scaleX,
+                visualMin.z + pixelCoord.y * scaleZ
             )
         }
     }

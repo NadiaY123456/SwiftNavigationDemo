@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		410875F52E00733600FC5A3D /* SwiftNavigation in Frameworks */ = {isa = PBXBuildFile; productRef = 410875F42E00733600FC5A3D /* SwiftNavigation */; };
 		414D7F622E007D3600999B62 /* nav_test.bin in Resources */ = {isa = PBXBuildFile; fileRef = 414D7F612E007D3600999B62 /* nav_test.bin */; };
 		414D7F642E007FFB00999B62 /* navmeshWithIssues.bin in Resources */ = {isa = PBXBuildFile; fileRef = 414D7F632E007FFB00999B62 /* navmeshWithIssues.bin */; };
 		414D7F662E00847C00999B62 /* navmesh_16byte.bin in Resources */ = {isa = PBXBuildFile; fileRef = 414D7F652E00847C00999B62 /* navmesh_16byte.bin */; };
@@ -16,9 +15,10 @@
 		414DBD282E03362A00B3A142 /* plane.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 414DBD272E03362A00B3A142 /* plane.usdz */; };
 		414DBD2A2E033F5300B3A142 /* plane2.bin in Resources */ = {isa = PBXBuildFile; fileRef = 414DBD292E033F5300B3A142 /* plane2.bin */; };
 		4163C9402E00A160001CA143 /* navmesh_12byte.bin in Resources */ = {isa = PBXBuildFile; fileRef = 4163C93F2E00A160001CA143 /* navmesh_12byte.bin */; };
+		4172BB8D2E07248C0046C176 /* DelaunayTriangulation in Frameworks */ = {isa = PBXBuildFile; productRef = 4172BB8C2E07248C0046C176 /* DelaunayTriangulation */; };
+		4172BB902E0724990046C176 /* SwiftSimplify in Frameworks */ = {isa = PBXBuildFile; productRef = 4172BB8F2E0724990046C176 /* SwiftSimplify */; };
+		4172BB932E0724FA0046C176 /* SwiftNavigation in Frameworks */ = {isa = PBXBuildFile; productRef = 4172BB922E0724FA0046C176 /* SwiftNavigation */; };
 		4182F5012E05C03F0053D065 /* SplatMeshGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4182F5002E05C03F0053D065 /* SplatMeshGenerator.swift */; };
-		4182F5042E05C09A0053D065 /* SwiftSimplify in Frameworks */ = {isa = PBXBuildFile; productRef = 4182F5032E05C09A0053D065 /* SwiftSimplify */; };
-		4182F5072E05C1F20053D065 /* DelaunayTriangulation in Frameworks */ = {isa = PBXBuildFile; productRef = 4182F5062E05C1F20053D065 /* DelaunayTriangulation */; };
 		4182F50B2E05C9450053D065 /* SplatTester.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4182F50A2E05C93C0053D065 /* SplatTester.swift */; };
 		4182F50D2E05D6E20053D065 /* SplatMeshVisualizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4182F50C2E05D6D40053D065 /* SplatMeshVisualizer.swift */; };
 		4192045C2E05F9C800C46304 /* splat_greyscale.png in Resources */ = {isa = PBXBuildFile; fileRef = 4192045B2E05F9C800C46304 /* splat_greyscale.png */; };
@@ -87,10 +87,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				410875F52E00733600FC5A3D /* SwiftNavigation in Frameworks */,
-				4182F5072E05C1F20053D065 /* DelaunayTriangulation in Frameworks */,
-				4182F5042E05C09A0053D065 /* SwiftSimplify in Frameworks */,
+				4172BB932E0724FA0046C176 /* SwiftNavigation in Frameworks */,
 				4901C6662AB4F65F00FBDBF4 /* RealityKitContent in Frameworks */,
+				4172BB902E0724990046C176 /* SwiftSimplify in Frameworks */,
+				4172BB8D2E07248C0046C176 /* DelaunayTriangulation in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -236,9 +236,9 @@
 			name = NavMeshDemo;
 			packageProductDependencies = (
 				4901C6652AB4F65F00FBDBF4 /* RealityKitContent */,
-				410875F42E00733600FC5A3D /* SwiftNavigation */,
-				4182F5032E05C09A0053D065 /* SwiftSimplify */,
-				4182F5062E05C1F20053D065 /* DelaunayTriangulation */,
+				4172BB8C2E07248C0046C176 /* DelaunayTriangulation */,
+				4172BB8F2E0724990046C176 /* SwiftSimplify */,
+				4172BB922E0724FA0046C176 /* SwiftNavigation */,
 			);
 			productName = NavMeshDemo;
 			productReference = 4901C6602AB4F65F00FBDBF4 /* NavMeshDemo.app */;
@@ -269,9 +269,9 @@
 			);
 			mainGroup = 4901C6572AB4F65F00FBDBF4;
 			packageReferences = (
-				416E30B32E006AB2004B525E /* XCLocalSwiftPackageReference "../../NexTaleLibraries/SwiftNavigation" */,
-				4182F5022E05C09A0053D065 /* XCRemoteSwiftPackageReference "SwiftSimplify" */,
-				4182F5052E05C1F20053D065 /* XCRemoteSwiftPackageReference "DelaunaySwift" */,
+				4172BB8B2E07248C0046C176 /* XCRemoteSwiftPackageReference "DelaunaySwift" */,
+				4172BB8E2E0724990046C176 /* XCRemoteSwiftPackageReference "SwiftSimplify" */,
+				4172BB912E0724FA0046C176 /* XCLocalSwiftPackageReference "../../NexTaleLibraries/SwiftNavigation" */,
 			);
 			productRefGroup = 4901C6612AB4F65F00FBDBF4 /* Products */;
 			projectDirPath = "";
@@ -461,7 +461,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"NavMeshDemo/Preview Content\"";
-				DEVELOPMENT_TEAM = PJQC57N853;
+				DEVELOPMENT_TEAM = QVJVG7RWCN;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "$(TARGET_NAME)/Info.plist";
@@ -477,6 +477,7 @@
 				SWIFT_OBJC_INTEROP_MODE = objcxx;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
 		};
@@ -488,7 +489,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"NavMeshDemo/Preview Content\"";
-				DEVELOPMENT_TEAM = PJQC57N853;
+				DEVELOPMENT_TEAM = QVJVG7RWCN;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "$(TARGET_NAME)/Info.plist";
@@ -504,6 +505,7 @@
 				SWIFT_OBJC_INTEROP_MODE = objcxx;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
 		};
@@ -531,22 +533,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		416E30B32E006AB2004B525E /* XCLocalSwiftPackageReference "../../NexTaleLibraries/SwiftNavigation" */ = {
+		4172BB912E0724FA0046C176 /* XCLocalSwiftPackageReference "../../NexTaleLibraries/SwiftNavigation" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../../NexTaleLibraries/SwiftNavigation;
 		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		4182F5022E05C09A0053D065 /* XCRemoteSwiftPackageReference "SwiftSimplify" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/malcommac/SwiftSimplify.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.1.1;
-			};
-		};
-		4182F5052E05C1F20053D065 /* XCRemoteSwiftPackageReference "DelaunaySwift" */ = {
+		4172BB8B2E07248C0046C176 /* XCRemoteSwiftPackageReference "DelaunaySwift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/AlexLittlejohn/DelaunaySwift.git";
 			requirement = {
@@ -554,22 +548,30 @@
 				minimumVersion = 1.0.0;
 			};
 		};
+		4172BB8E2E0724990046C176 /* XCRemoteSwiftPackageReference "SwiftSimplify" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/malcommac/SwiftSimplify.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.1.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		410875F42E00733600FC5A3D /* SwiftNavigation */ = {
+		4172BB8C2E07248C0046C176 /* DelaunayTriangulation */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = SwiftNavigation;
+			package = 4172BB8B2E07248C0046C176 /* XCRemoteSwiftPackageReference "DelaunaySwift" */;
+			productName = DelaunayTriangulation;
 		};
-		4182F5032E05C09A0053D065 /* SwiftSimplify */ = {
+		4172BB8F2E0724990046C176 /* SwiftSimplify */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 4182F5022E05C09A0053D065 /* XCRemoteSwiftPackageReference "SwiftSimplify" */;
+			package = 4172BB8E2E0724990046C176 /* XCRemoteSwiftPackageReference "SwiftSimplify" */;
 			productName = SwiftSimplify;
 		};
-		4182F5062E05C1F20053D065 /* DelaunayTriangulation */ = {
+		4172BB922E0724FA0046C176 /* SwiftNavigation */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 4182F5052E05C1F20053D065 /* XCRemoteSwiftPackageReference "DelaunaySwift" */;
-			productName = DelaunayTriangulation;
+			productName = SwiftNavigation;
 		};
 		4901C6652AB4F65F00FBDBF4 /* RealityKitContent */ = {
 			isa = XCSwiftPackageProductDependency;

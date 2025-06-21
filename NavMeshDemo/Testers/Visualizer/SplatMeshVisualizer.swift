@@ -68,7 +68,6 @@ public func createMeshEntity(
     return parent
 }
 
-/// Creates the main surface mesh
 @MainActor
 private func createSurfaceMesh(
     vertices3D: [SIMD3<Float>],
@@ -81,18 +80,8 @@ private func createSurfaceMesh(
     // Set positions
     meshDescriptor.positions = MeshBuffer(vertices3D)
     
-    // Reverse the winding order to make the mesh visible from the front
-    var reversedIndices: [UInt32] = []
-    for i in stride(from: 0, to: indices.count, by: 3) {
-        guard i + 2 < indices.count else { continue }
-        // Reverse winding order: (i0, i1, i2) -> (i0, i2, i1)
-        reversedIndices.append(indices[i])
-        reversedIndices.append(indices[i + 2])
-        reversedIndices.append(indices[i + 1])
-    }
-    
     // Set indices (primitives)
-    meshDescriptor.primitives = .triangles(reversedIndices)
+    meshDescriptor.primitives = .triangles(indices)
     
     // Generate normals (all pointing in +Z direction for a flat mesh)
     let normals = [SIMD3<Float>](repeating: SIMD3<Float>(0, 0, 1), count: vertices3D.count)
@@ -102,11 +91,12 @@ private func createSurfaceMesh(
         // Create mesh resource
         let mesh = try MeshResource.generate(from: [meshDescriptor])
         
-        // Create material with transparency support
-        var material = SimpleMaterial()
-        material.color = SimpleMaterial.BaseColor(tint: color)
+        // Create PhysicallyBasedMaterial instead of SimpleMaterial
+        var material = PhysicallyBasedMaterial()
+        material.baseColor = PhysicallyBasedMaterial.BaseColor(tint: color)
         material.roughness = 0.5
         material.metallic = 0.0
+        material.faceCulling = .none // Set face culling to none for double-sided rendering
         
         // Create model entity
         let entity = ModelEntity(mesh: mesh, materials: [material])
@@ -118,6 +108,9 @@ private func createSurfaceMesh(
         return nil
     }
 }
+
+
+
 
 /// Creates edge wireframe visualization
 @MainActor
