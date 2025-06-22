@@ -7,6 +7,7 @@
 
 import RealityKit
 import UIKit
+import SwiftNavigation
 
 /// Handy wrapper that loads a UIImage, runs `SplatMeshGenerator`,
 /// prints some stats, and hands the full 2-D mesh bundle back.

@@ -1,15 +1,6 @@
 {
   "pins" : [
     {
-      "identity" : "delaunayswift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/AlexLittlejohn/DelaunaySwift.git",
-      "state" : {
-        "revision" : "5738c6a3b140d990a5dd89fe50d0cae933268bda",
-        "version" : "1.0.0"
-      }
-    },
-    {
       "identity" : "swift-docc-plugin",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-docc-plugin",
