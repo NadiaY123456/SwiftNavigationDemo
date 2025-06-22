@@ -61,11 +61,14 @@ struct ContentView: View {
                             terrainName: "foothill",
                             terrainRotation: simd_quatf(angle: .pi / 2, axis: [0, 1, 0]),
                             splatName: "splat_rgba.png",
-                            channel: .blue,
+                            channel: .red,
                             maxEdgeLength: 50,
-                            simplificationTolerance: 0.0001,
-                            threshold: 0.05, // nil, // auto-threshold
-                            invertMask: true
+                            simplificationTolerance: 0.001,
+                            threshold: 0.1, //nil, //(nil = auto)
+                            invertMask: false, //(nil = auto),
+                            morphologyRadius: 0, // Try reducing or removing morphology for images with distinct regions to avoid eroding thin features: 0, otherwise 2
+                            interiorSpacingFactor: 1000 // interiorSpacing = maxEdgeLength * interiorSpacingFactor
+
                         )
 #if false
                         let selectedMesh = "plane2"

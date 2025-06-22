@@ -2,11 +2,10 @@
 //  SplatMeshGenerator.swift
 //  SwiftNavigation
 //
-//  Created by Nadia Yilmaz on 6/20/25.
-//  Fixed version that properly handles multiple regions
+//  Updated 2025-06-21
+//  • compile-error fixed (no unhandled `try`)
+//  • `invertMask` is now Optional ⇒ pass `nil` for “auto”
 //
-
-
 
 import CoreImage
 import DelaunayTriangulation
@@ -15,253 +14,116 @@ import SwiftSimplify
 import UIKit
 import Vision
 
+// MARK: – Public entry point ----------------------------------------------------
+
 public struct SplatMeshGenerator {
-    
-    public enum Channel {
-        case red
-        case green
-        case blue
-        case alpha
-        case grayscale
-    }
+    public enum Channel { case red, green, blue, alpha, grayscale }
 
     /// Output edges will be **≤** this length in image-space points.
     public let maxEdgeLength: CGFloat
     /// Douglas-Peucker tolerance expressed as a fraction of the *shorter* image side.
     public let simplificationTolerance: CGFloat
-    /// Optional manual threshold in \[0 … 1]; `nil` → auto Otsu.
+    /// Optional manual threshold in [0 … 1]; `nil` → Otsu.
     public let threshold: Float?
-    /// Which channel to use for mesh generation
+    /// Which channel to use for mesh generation.
     public let channel: Channel
-    /// Whether to invert the binary mask (detect dark regions instead of light)
-    public let invertMask: Bool
+    /// `nil` → auto; `false` → detect *bright* shapes; `true` → detect *dark* shapes.
+    public let invertMask: Bool?
     /// Radius (pixels) for the dilate → erode “closing” operation; 0 = skip.
     public let morphologyRadius: Int
+    /// Fraction of `maxEdgeLength` to use for interior grid spacing.
+    public let interiorSpacingFactor: CGFloat
 
     private let ciContext = CIContext(options: [.cacheIntermediates: false])
 
-    public init(maxEdgeLength: CGFloat,
-                simplificationTolerance: CGFloat = 0.005,
-                threshold: Float? = nil, // nil  → auto Otsu
-                channel: Channel = .grayscale,
-                invertMask: Bool = false,
-                morphologyRadius: Int = 2) // new default
-    {
+    public init(
+        maxEdgeLength: CGFloat,
+        simplificationTolerance: CGFloat = 0.005,
+        threshold: Float? = nil, // nil → Otsu
+        channel: Channel = .grayscale,
+        invertMask: Bool? = nil, // nil → auto (old default)
+        morphologyRadius: Int = 2,
+        interiorSpacingFactor: CGFloat = 0.8
+
+    ) {
         self.maxEdgeLength = maxEdgeLength
         self.simplificationTolerance = simplificationTolerance
         self.threshold = threshold
         self.channel = channel
         self.invertMask = invertMask
         self.morphologyRadius = morphologyRadius
+        self.interiorSpacingFactor = interiorSpacingFactor
     }
 
-    // MARK: – Public API (async/await)
+    // MARK: – High-level pipeline (async/await) ---------------------------------
 
-    public func mesh(from image: UIImage) async throws -> MeshResult2D {
-        print("\n[DEBUG] Starting mesh generation")
-        print("[DEBUG] Input image size: \(image.size)")
+    public func mesh(from image: UIImage, debugURL: URL? = nil) async throws -> MeshResult2D {
+        print("\n[DEBUG] Starting mesh generation – channel:", channel)
+        print("[DEBUG] invertMask:", invertMask.map { "\($0)" } ?? "auto")
 
-        // Add Python output for image size
-        print("\n# Python: Image dimensions")
-        print("image_width = \(image.size.width)")
-        print("image_height = \(image.size.height)")
+        // 1. Binary mask
+        let mask = try await createBinaryMask(from: image, debugURL: debugURL)
 
-        print("[DEBUG] Selected channel: \(channel)")
-        print("[DEBUG] Parameters:")
-        print("  - maxEdgeLength: \(maxEdgeLength)")
-        print("  - simplificationTolerance: \(simplificationTolerance)")
-        print("  - threshold: \(threshold ?? -1) (nil = auto)")
-        print("  - invertMask: \(invertMask)")
-
-        // Add Python output for parameters
-        print("\n# Python: Parameters")
-        print("max_edge_length = \(maxEdgeLength)")
-        print("simplification_tolerance = \(simplificationTolerance)")
-        print("threshold = \(threshold ?? -1)")
-        print("invert_mask = \(invertMask)")
-
-        // 1. Binarise
-        print("\n[DEBUG] Step 1: Creating binary mask...")
-        let mask = try await createBinaryMask(from: image)
-        print("[DEBUG] Mask extent: \(mask.extent)")
-
-        // 2. Detect contours
-        print("\n[DEBUG] Step 2: Detecting contours...")
+        // 2. Contours
         let contours = try await detectContours(in: mask)
-        print("[DEBUG] Found \(contours.count) contours to process")
 
-        // 3. Process each contour separately and combine results
-        var allVertices: [SIMD2<Float>] = []
-        var allIndices: [UInt32] = []
+        // 3. Per-contour → triangulate
+        var vertices: [SIMD2<Float>] = []
+        var indices: [UInt32] = []
 
-        // Store intermediate data for Python output
-        var allRawContours: [[CGPoint]] = []
-        var allSimplifiedContours: [[CGPoint]] = []
-        var allResampledContours: [[CGPoint]] = []
+        for (idx, contour) in contours.enumerated() {
+            print("\n[DEBUG] Processing contour \(idx) with \(contour.pointCount) points...")
 
-        for (i, contour) in contours.enumerated() {
-            print("\n[DEBUG] Processing contour \(i) with \(contour.pointCount) points...")
-
-            // Process this contour
             let rawPoints = flattenSingleContour(contour, imageSize: image.size)
-            allRawContours.append(rawPoints)
+            guard rawPoints.count >= 3 else { continue }
 
-            if rawPoints.count < 3 {
-                print("[DEBUG] Skipping contour \(i) - too few points (\(rawPoints.count))")
-                continue
-            }
-            
-            #if false
-            // Print raw contour for Python
-            printPythonPoints(rawPoints, name: "contour_\(i)_raw")
-            #endif
-
-            // Simplify
             let tolerance = simplificationTolerance * min(image.size.width, image.size.height)
             let simplified = rawPoints.simplified(tolerance: tolerance)
-            allSimplifiedContours.append(simplified)
             print("[DEBUG] Simplified from \(rawPoints.count) to \(simplified.count) points")
 
-            #if false
-            // Print simplified contour for Python
-            printPythonPoints(simplified, name: "contour_\(i)_simplified")
-            
-
-            if simplified.count < 3 {
-                print("[DEBUG] Skipping contour \(i) after simplification - too few points")
-                continue
-            }
-            #endif
+            guard simplified.count >= 3 else { continue }
 
             // Resample
             let refined = resample(points: simplified)
-            allResampledContours.append(refined)
             print("[DEBUG] Resampled to \(refined.count) points")
 
-            #if false
-            // Print resampled contour for Python
-            printPythonPoints(refined, name: "contour_\(i)_resampled")
-            #endif
-            
-            // Triangulate this contour
-            let indices = triangulate(points: refined)
+            // Triangulate with interior points
+            let (triangulatedVertices, localIndices) = triangulateWithInterior(points: refined)
 
-            if indices.isEmpty {
-                print("[DEBUG] No triangles generated for contour \(i)")
+            guard !localIndices.isEmpty else {
+                print("[DEBUG] No triangles generated for contour \(idx)")
                 continue
             }
 
             // Offset indices by current vertex count
-            let indexOffset = UInt32(allVertices.count)
-            let offsetIndices = indices.map { $0 + indexOffset }
+            let indexOffset = UInt32(vertices.count)
+            let offsetIndices = localIndices.map { $0 + indexOffset }
 
-            #if false
-            // Print triangulation info for this contour
-            print("\n# Python: Contour \(i) triangulation")
-            print("contour_\(i)_vertex_offset = \(indexOffset)")
-            print("contour_\(i)_num_vertices = \(refined.count)")
-            print("contour_\(i)_num_triangles = \(indices.count / 3)")
-            #endif
+            // Add ALL vertices (boundary + interior) to the result
+            let verts = triangulatedVertices.map { SIMD2(Float($0.x), Float($0.y)) }
+            vertices.append(contentsOf: verts)
+            indices.append(contentsOf: offsetIndices)
 
-            // Add to combined results
-            let verts = refined.map { SIMD2(Float($0.x), Float($0.y)) }
-            allVertices.append(contentsOf: verts)
-            allIndices.append(contentsOf: offsetIndices)
-
-            print("[DEBUG] Added \(verts.count) vertices and \(indices.count / 3) triangles from contour \(i)")
+            print("[DEBUG] Added \(verts.count) vertices (\(refined.count) boundary + \(verts.count - refined.count) interior) and \(localIndices.count / 3) triangles from contour \(idx)")
         }
 
-        print("\n[DEBUG] Final combined result: \(allVertices.count) vertices, \(allIndices.count / 3) triangles")
-
-        #if false
-        // Print final mesh data for Python
-        print("\n# ===== FINAL MESH DATA FOR PYTHON =====")
-
-        // Image dimensions
-        print("\n# Python: Image dimensions")
-        print("image_width = \(image.size.width)")
-        print("image_height = \(image.size.height)")
-
-        // Parameters
-        print("\n# Python: Parameters")
-        print("max_edge_length = \(maxEdgeLength)")
-        print("simplification_tolerance = \(simplificationTolerance)")
-
-        // All contour data
-        print("\n# Python: Contour data")
-        for (i, rawContour) in allRawContours.enumerated() {
-            if !rawContour.isEmpty {
-                printPythonPoints(rawContour, name: "contour_\(i)_raw")
-            }
-        }
-
-        for (i, simplifiedContour) in allSimplifiedContours.enumerated() {
-            if !simplifiedContour.isEmpty {
-                printPythonPoints(simplifiedContour, name: "contour_\(i)_simplified")
-            }
-        }
-
-        for (i, resampledContour) in allResampledContours.enumerated() {
-            if !resampledContour.isEmpty {
-                printPythonPoints(resampledContour, name: "contour_\(i)_resampled")
-            }
-        }
-
-        #if false
-        // Vertices and indices
-        print("\n# Python: Mesh data")
-        printPythonVertices(allVertices, name: "vertices")
-        printPythonArray(allIndices, name: "indices")
-
-        // Print triangle data as triplets
-        print("\n# Python: Triangles (as vertex index triplets)")
-        print("triangles = [")
-        for i in stride(from: 0, to: allIndices.count, by: 3) {
-            if i + 2 < allIndices.count {
-                if i + 3 >= allIndices.count {
-                    print("    [\(allIndices[i]), \(allIndices[i + 1]), \(allIndices[i + 2])]")
-                } else {
-                    print("    [\(allIndices[i]), \(allIndices[i + 1]), \(allIndices[i + 2])],")
-                }
-            }
-        }
-        print("]")
-        #endif
-
-        // Print summary statistics
-        print("\n# Python: Summary")
-        print("num_vertices = \(allVertices.count)")
-        print("num_triangles = \(allIndices.count / 3)")
-        print("num_contours = \(contours.count)")
-
-        // Print bounding box
-        if !allVertices.isEmpty {
-            let xCoords = allVertices.map { $0.x }
-            let yCoords = allVertices.map { $0.y }
-            print("\n# Python: Bounding box")
-            print("bbox_min = [\(xCoords.min() ?? 0), \(yCoords.min() ?? 0)]")
-            print("bbox_max = [\(xCoords.max() ?? 0), \(yCoords.max() ?? 0)]")
-        }
-
-        print("\n# ===== END PYTHON DATA =====\n")
-        #endif
-
-        return MeshResult2D(vertices: allVertices,
-                            indices: allIndices,
-                            imageSize: image.size)
+        print("[DEBUG] Final: \(vertices.count) vertices, \(indices.count / 3) triangles")
+        return MeshResult2D(vertices: vertices, indices: indices, imageSize: image.size)
     }
 
-    // MARK: – Step 1: Binary mask with auto-threshold + morphology
+    // MARK: – Step 1: Channel isolation → threshold → morphology -----------------
 
-    private func createBinaryMask(from image: UIImage) async throws -> CIImage {
+    private func createBinaryMask(from image: UIImage,
+                                  debugURL: URL? = nil) async throws -> CIImage {
         guard let ci = CIImage(image: image) else { throw MeshError.invalidImage }
-        print("[DEBUG] Source CIImage extent: \(ci.extent)")
 
-        // --- 1. Isolate the requested channel --------------------------------------------------
-        let channelImage: CIImage
+        print("[DEBUG] Input image size: \(image.size)")
+        print("[DEBUG] Input CIImage extent: \(ci.extent)")
+
+        // (a) Extract requested channel
+        var channelImage: CIImage
         switch channel {
         case .red:
-            // copy R into all RGB outputs
             channelImage = ci.applyingFilter("CIColorMatrix", parameters: [
                 "inputRVector": CIVector(x: 1, y: 0, z: 0, w: 0),
                 "inputGVector": CIVector(x: 1, y: 0, z: 0, w: 0),
@@ -269,7 +131,6 @@ public struct SplatMeshGenerator {
                 "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 1)
             ])
         case .green:
-            // copy G into all RGB outputs
             channelImage = ci.applyingFilter("CIColorMatrix", parameters: [
                 "inputRVector": CIVector(x: 0, y: 1, z: 0, w: 0),
                 "inputGVector": CIVector(x: 0, y: 1, z: 0, w: 0),
@@ -277,7 +138,6 @@ public struct SplatMeshGenerator {
                 "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 1)
             ])
         case .blue:
-            // copy B into all RGB outputs
             channelImage = ci.applyingFilter("CIColorMatrix", parameters: [
                 "inputRVector": CIVector(x: 0, y: 0, z: 1, w: 0),
                 "inputGVector": CIVector(x: 0, y: 0, z: 1, w: 0),
@@ -285,7 +145,6 @@ public struct SplatMeshGenerator {
                 "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 1)
             ])
         case .alpha:
-            // copy α into RGB
             channelImage = ci.applyingFilter("CIColorMatrix", parameters: [
                 "inputRVector": CIVector(x: 0, y: 0, z: 0, w: 1),
                 "inputGVector": CIVector(x: 0, y: 0, z: 0, w: 1),
@@ -293,7 +152,6 @@ public struct SplatMeshGenerator {
                 "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 1)
             ])
         case .grayscale:
-            // BT.709 luma → all RGB
             channelImage = ci.applyingFilter("CIColorMatrix", parameters: [
                 "inputRVector": CIVector(x: 0.2126, y: 0, z: 0, w: 0),
                 "inputGVector": CIVector(x: 0, y: 0.7152, z: 0, w: 0),
@@ -301,102 +159,184 @@ public struct SplatMeshGenerator {
                 "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 1)
             ])
         }
-        saveDebugImage(channelImage, name: "debug_1_channel_\(channel)")
 
-        // --- 2. Threshold ----------------------------------------------------------------------
+        print("[DEBUG] Channel image extent after extraction: \(channelImage.extent)")
+        // Test: Ensure extent is not infinite
+        if channelImage.extent.isInfinite {
+            print("[DEBUG] WARNING: Channel image has infinite extent, cropping...")
+            channelImage = channelImage.cropped(to: ci.extent)
+        }
+
+        // (c) Threshold
         let cutOff: Float = {
-            if let manual = threshold { return manual }
-            return try! computeOtsuThreshold(for: channelImage) // safe; fallback inside
+            if let manual = threshold {
+                return manual
+            }
+
+            // Try Otsu, but with fallback
+            if let otsu = try? computeOtsuThreshold(for: channelImage), otsu > 0.01 && otsu < 0.99 {
+                return otsu
+            } else {
+                print("[DEBUG] Otsu threshold failed or returned extreme value, using fallback 0.5")
+                return 0.5 // Reasonable fallback
+            }
         }()
-        print("[DEBUG] Using threshold: \(cutOff) (\(threshold == nil ? "auto-Otsu" : "manual"))")
 
-        let thresh = CIFilter(name: "CIColorThreshold")!
-        thresh.setValue(channelImage, forKey: kCIInputImageKey)
-        thresh.setValue(cutOff, forKey: "inputThreshold")
-        guard var mask = thresh.outputImage else { throw MeshError.invalidImage }
+        print("[DEBUG] Using threshold: \(cutOff)")
 
-        // CIColorThreshold → white for LOW intensities.
-        // If the caller wants bright regions, flip once; otherwise leave as-is.
-        if !invertMask {
-            mask = CIFilter(name: "CIColorInvert",
-                            parameters: [kCIInputImageKey: mask])!.outputImage!
+        // Create threshold filter
+        guard let threshFilter = CIFilter(name: "CIColorThreshold") else {
+            print("[DEBUG] Failed to create CIColorThreshold filter")
+            throw MeshError.invalidImage
         }
 
-        // --- 3. Morphology ---------------------------------------------------------------------
+        threshFilter.setValue(channelImage, forKey: kCIInputImageKey)
+        threshFilter.setValue(cutOff, forKey: "inputThreshold")
+
+        guard var mask = threshFilter.outputImage else {
+            print("[DEBUG] CIColorThreshold produced nil output")
+            throw MeshError.invalidImage
+        }
+
+        print("[DEBUG] Mask extent after threshold: \(mask.extent)")
+
+        // (d) Inversion
+        let shouldInvert: Bool = {
+            if let explicit = invertMask {
+                // Direct mapping - no negation!
+                // invertMask = true means "invert the mask"
+                // invertMask = false means "don't invert the mask"
+                return explicit
+            }
+            // Auto mode: don't invert by default
+            return false
+        }()
+
+        print("[DEBUG] Should invert: \(shouldInvert)")
+
+        if shouldInvert {
+            guard let invertFilter = CIFilter(name: "CIColorInvert") else {
+                print("[DEBUG] Failed to create CIColorInvert filter")
+                throw MeshError.invalidImage
+            }
+            invertFilter.setValue(mask, forKey: kCIInputImageKey)
+            guard let inverted = invertFilter.outputImage else {
+                print("[DEBUG] CIColorInvert produced nil output")
+                throw MeshError.invalidImage
+            }
+            mask = inverted
+            print("[DEBUG] Mask extent after inversion: \(mask.extent)")
+        }
+
+        // (e) Morphology
         if morphologyRadius > 0 {
-            let dilate = CIFilter(name: "CIMorphologyRectangleMaximum",
-                                  parameters: [kCIInputImageKey: mask,
-                                               "inputWidth": morphologyRadius,
-                                               "inputHeight": morphologyRadius])!.outputImage!
-            mask = CIFilter(name: "CIMorphologyRectangleMinimum",
-                            parameters: [kCIInputImageKey: dilate,
-                                         "inputWidth": morphologyRadius,
-                                         "inputHeight": morphologyRadius])!.outputImage!
+            print("[DEBUG] Applying morphology with radius: \(morphologyRadius)")
+
+            // Dilate
+            guard let dilateFilter = CIFilter(name: "CIMorphologyRectangleMaximum") else {
+                print("[DEBUG] Failed to create dilate filter")
+                throw MeshError.invalidImage
+            }
+            dilateFilter.setValue(mask, forKey: kCIInputImageKey)
+            dilateFilter.setValue(morphologyRadius, forKey: "inputWidth")
+            dilateFilter.setValue(morphologyRadius, forKey: "inputHeight")
+
+            guard let dilated = dilateFilter.outputImage else {
+                print("[DEBUG] Dilate filter produced nil output")
+                throw MeshError.invalidImage
+            }
+
+            // Erode
+            guard let erodeFilter = CIFilter(name: "CIMorphologyRectangleMinimum") else {
+                print("[DEBUG] Failed to create erode filter")
+                throw MeshError.invalidImage
+            }
+            erodeFilter.setValue(dilated, forKey: kCIInputImageKey)
+            erodeFilter.setValue(morphologyRadius, forKey: "inputWidth")
+            erodeFilter.setValue(morphologyRadius, forKey: "inputHeight")
+
+            guard let eroded = erodeFilter.outputImage else {
+                print("[DEBUG] Erode filter produced nil output")
+                throw MeshError.invalidImage
+            }
+
+            mask = eroded
+            print("[DEBUG] Mask extent after morphology: \(mask.extent)")
         }
 
-        saveDebugImage(mask, name: "debug_2_binary_mask")
+        // Final extent check
+        if mask.extent.isInfinite {
+            print("[DEBUG] Final mask has infinite extent, cropping to original bounds")
+            mask = mask.cropped(to: ci.extent)
+        }
+
+        print("[DEBUG] Final mask extent: \(mask.extent)")
+
+        // Verify we can create a CGImage (this is what Vision will need)
+        if let testCG = ciContext.createCGImage(mask, from: mask.extent) {
+            print("[DEBUG] Successfully created test CGImage: \(testCG.width)x\(testCG.height)")
+        } else {
+            print("[DEBUG] WARNING: Cannot create CGImage from mask!")
+        }
+
+        // ----- NEW: save a debug PNG if requested ----------------------------------
+            if let url = debugURL,
+               let cg = ciContext.createCGImage(mask, from: mask.extent) {
+
+                let ui = UIImage(cgImage: cg)
+                if let png = ui.pngData() {
+                    try? png.write(to: url, options: .atomic)
+                    print("[DEBUG] Wrote threshold mask → \(url.path)")
+                }
+            }
+            // --------------------------------------------------------------------------
+
         return mask
     }
 
-    // MARK: – Step 2: Contour detection
+    // MARK: – Step 2: Contour detection (Vision) ----------------------------------
 
     private func detectContours(in mask: CIImage) async throws -> [VNContour] {
         print("[DEBUG] Creating VNImageRequestHandler...")
-        let handler = VNImageRequestHandler(ciImage: mask, options: [:])
-        let request = VNDetectContoursRequest()
-        request.maximumImageDimension = 1024
-        request.revision = VNDetectContoursRequest.currentRevision
 
-        // The mask always contains *bright* shapes on a dark background after the change above.
-        request.detectsDarkOnLight = false
+        guard let cgImage = ciContext.createCGImage(mask, from: mask.extent) else {
+            throw MeshError.invalidImage
+        }
 
-        print("[DEBUG] Request configuration:")
-        print("  - maximumImageDimension: \(request.maximumImageDimension)")
-        print("  - revision: \(request.revision)")
-        print("  - detectsDarkOnLight: \(request.detectsDarkOnLight)")
+        let handler  = VNImageRequestHandler(cgImage: cgImage, options: [:])
+        let request  = VNDetectContoursRequest()
+        request.maximumImageDimension = 1024            // keep or tweak
+        request.detectsDarkOnLight    = false           // black-on-white mask
 
         try handler.perform([request])
-
         guard let obs = request.results?.first as? VNContoursObservation else {
-            print("[DEBUG] No contours observation found!")
             throw MeshError.noContours
         }
 
-        print("[DEBUG] Contours observation:")
-        print("  - contourCount: \(obs.contourCount)")
-        print("  - topLevelContours count: \(obs.topLevelContours.count)")
+        print("[DEBUG] Contours: total \(obs.contourCount)")
 
-        // Check if we have a single boundary contour with children
-        if obs.topLevelContours.count == 1 {
-            let topContour = obs.topLevelContours[0]
-            let bounds = topContour.normalizedPoints
-            let minX = bounds.map { $0.x }.min() ?? 0
-            let maxX = bounds.map { $0.x }.max() ?? 0
-            let minY = bounds.map { $0.y }.min() ?? 0
-            let maxY = bounds.map { $0.y }.max() ?? 0
-
-            if abs(minX) < 0.01, abs(minY) < 0.01, abs(maxX - 1.0) < 0.01, abs(maxY - 1.0) < 0.01 {
-                print("[DEBUG] Detected image boundary as main contour")
-                print("[DEBUG] Found \(topContour.childContours.count) child contours (actual regions)")
-
-                // Debug child contours
-                for (i, child) in topContour.childContours.prefix(5).enumerated() {
-                    print("[DEBUG] Child contour \(i): \(child.pointCount) points")
-                }
-
-                return topContour.childContours
+        // --------  NEW: grab *all* contours and drop the image border -------------
+        let epsilon: Float = 0.001                      // edge tolerance
+        let allContours = (0..<obs.contourCount).compactMap { try? obs.contour(at: $0) }
+        let realContours = allContours.filter { c in
+            // A Vision border contour has every vertex on an edge (x==0/1 || y==0/1)
+            let onEdge = c.normalizedPoints.allSatisfy { p in
+                abs(p.x) < epsilon || abs(p.x - 1) < epsilon ||
+                abs(p.y) < epsilon || abs(p.y - 1) < epsilon
             }
+            return !onEdge
         }
 
-        return obs.topLevelContours
+        print("[DEBUG] Returning \(realContours.count) real contours")
+        return realContours
     }
 
-    // MARK: – Helper functions
+    // MARK: – Geometry helpers --------------------------------------------------
 
     private func flattenSingleContour(_ contour: VNContour, imageSize: CGSize) -> [CGPoint] {
-        return contour.normalizedPoints.map { point in
-            CGPoint(x: CGFloat(point.x) * imageSize.width,
-                    y: (1.0 - CGFloat(point.y)) * imageSize.height)
+        contour.normalizedPoints.map { p in
+            CGPoint(x: CGFloat(p.x) * imageSize.width,
+                    y: (1 - CGFloat(p.y)) * imageSize.height)
         }
     }
 
@@ -421,16 +361,14 @@ public struct SplatMeshGenerator {
         return out
     }
 
-    // MARK: – Geometry helpers
-
-    /// Classic even/odd-rule test (ray-casting along +x).
     private func isPointInsidePolygon(_ p: CGPoint, polygon: [CGPoint]) -> Bool {
         guard polygon.count >= 3 else { return false }
         var inside = false
         var j = polygon.count - 1
         for i in 0 ..< polygon.count {
             let pi = polygon[i], pj = polygon[j]
-            let intersect = (pi.y > p.y) != (pj.y > p.y) &&
+            let intersect =
+                ((pi.y > p.y) != (pj.y > p.y)) &&
                 (p.x < (pj.x - pi.x) * (p.y - pi.y) / (pj.y - pi.y) + pi.x)
             if intersect { inside.toggle() }
             j = i
@@ -438,21 +376,59 @@ public struct SplatMeshGenerator {
         return inside
     }
 
-    /// Returns only those triangles whose centroid lies **inside** the contour.
-    private func triangulate(points: [CGPoint]) -> [UInt32] {
-        guard points.count >= 3 else { return [] }
+    private func triangulateWithInterior(points: [CGPoint]) -> (vertices: [CGPoint], indices: [UInt32]) {
+        guard points.count >= 3 else { return ([], []) }
 
-        // 1. Delaunay on the full point set
-        let delaunayPts = points.map { Point(x: Double($0.x), y: Double($0.y)) }
-        let tris = DelaunayTriangulation.triangulate(delaunayPts)
+        // Calculate the area to determine if we need interior points
+        var area: CGFloat = 0
+        for i in 0 ..< points.count {
+            let j = (i + 1) % points.count
+            area += points[i].x * points[j].y - points[j].x * points[i].y
+        }
+        area = abs(area) / 2
 
-        // 2. Lookup table: Point  ➜  vertex-index
-        var indexFor: [Point: UInt32] = [:]
-        for (i, pt) in delaunayPts.enumerated() {
-            indexFor[pt] = UInt32(i)
+        // Create a combined point set with boundary + interior points
+        var allPoints = points
+
+        // If the polygon is large enough, add interior points
+        let spacing = maxEdgeLength * interiorSpacingFactor
+        let areaThreshold = spacing * spacing * 2
+
+        // Only add interior points if polygon is “big enough”
+        if area > areaThreshold {
+            let xCoords = points.map { $0.x }
+            let yCoords = points.map { $0.y }
+            let minX = xCoords.min() ?? 0
+            let maxX = xCoords.max() ?? 0
+            let minY = yCoords.min() ?? 0
+            let maxY = yCoords.max() ?? 0
+
+            var y = minY + spacing
+            while y < maxY {
+                var x = minX + spacing
+                while x < maxX {
+                    let pt = CGPoint(x: x, y: y)
+                    if isPointInsidePolygon(pt, polygon: points) {
+                        allPoints.append(pt)
+                    }
+                    x += spacing
+                }
+                y += spacing
+            }
+            print("[DEBUG] Added \(allPoints.count - points.count) interior points")
         }
 
-        // 3. Keep only triangles whose centroid sits inside the original polygon
+        // Now triangulate with all points (boundary + interior)
+        let dlPts = allPoints.map { Point(x: Double($0.x), y: Double($0.y)) }
+        let tris = DelaunayTriangulation.triangulate(dlPts)
+
+        // Build index lookup
+        var indexFor: [Point: UInt32] = [:]
+        for (i, p) in dlPts.enumerated() {
+            indexFor[p] = UInt32(i)
+        }
+
+        // Keep triangles whose centroid is inside
         var kept: [UInt32] = []
         for tri in tris {
             guard
@@ -462,96 +438,20 @@ public struct SplatMeshGenerator {
             else { continue }
 
             let centroid = CGPoint(
-                x: (points[Int(ia)].x + points[Int(ib)].x + points[Int(ic)].x) / 3,
-                y: (points[Int(ia)].y + points[Int(ib)].y + points[Int(ic)].y) / 3)
+                x: (allPoints[Int(ia)].x + allPoints[Int(ib)].x + allPoints[Int(ic)].x) / 3,
+                y: (allPoints[Int(ia)].y + allPoints[Int(ib)].y + allPoints[Int(ic)].y) / 3)
 
             if isPointInsidePolygon(centroid, polygon: points) {
                 kept.append(contentsOf: [ia, ib, ic])
             }
         }
-        return kept
+
+        // Return both the complete point set and the indices
+        return (vertices: allPoints, indices: kept)
     }
 
-    // MARK: - Debug Helpers
+    // MARK: – Otsu threshold ----------------------------------------------------
 
-    private func saveDebugImage(_ ciImage: CIImage, name: String) {
-        #if false
-        guard let cgImage = ciContext.createCGImage(ciImage, from: ciImage.extent) else {
-            print("[DEBUG] Failed to create CGImage for \(name)")
-            return
-        }
-
-        let uiImage = UIImage(cgImage: cgImage)
-        let debugDirectory = URL(fileURLWithPath: "/Users/nata/Library/CloudStorage/OneDrive-Personal/CNC/VisionPro/World")
-
-        do {
-            try FileManager.default.createDirectory(at: debugDirectory, withIntermediateDirectories: true, attributes: nil)
-        } catch {
-            print("[DEBUG] Failed to create debug directory: \(error)")
-            return
-        }
-
-        let fileURL = debugDirectory.appendingPathComponent("\(name).png")
-
-        if let data = uiImage.pngData() {
-            do {
-                try data.write(to: fileURL)
-                print("[DEBUG] Saved debug image to: \(fileURL.path)")
-            } catch {
-                print("[DEBUG] Failed to save debug image: \(error)")
-            }
-        }
-        #endif
-    }
-
-    // MARK: - Python-friendly Debug Output
-
-    private func printPythonArray<T>(_ array: [T], name: String) {
-        print("\n# Python: \(name)")
-        print("\(name) = [")
-        for (i, element) in array.enumerated() {
-            if i == array.count - 1 {
-                print("    \(element)")
-            } else {
-                print("    \(element),")
-            }
-        }
-        print("]")
-    }
-
-    private func printPythonVertices(_ vertices: [SIMD2<Float>], name: String) {
-        print("\n# Python: \(name)")
-        print("\(name) = [")
-        for (i, v) in vertices.enumerated() {
-            if i == vertices.count - 1 {
-                print("    [\(v.x), \(v.y)]")
-            } else {
-                print("    [\(v.x), \(v.y)],")
-            }
-        }
-        print("]")
-    }
-
-    private func printPythonPoints(_ points: [CGPoint], name: String) {
-        print("\n# Python: \(name)")
-        print("\(name) = [")
-        for (i, p) in points.enumerated() {
-            if i == points.count - 1 {
-                print("    [\(p.x), \(p.y)]")
-            } else {
-                print("    [\(p.x), \(p.y)],")
-            }
-        }
-        print("]")
-    }
-
-    // MARK: – Histogram-based auto-threshold (Otsu)
-
-    /// Returns an intensity threshold in the range 0…1 that maximises inter-class variance
-    /// on the **single-channel** image passed in (e.g. the green channel you isolated).
-    ///
-    /// The code uses `CIAreaHistogram` (256 bins, un-scaled) → reads the red channel of
-    /// the 256-pixel-wide result image into RAM → classic one-pass Otsu.
     private func computeOtsuThreshold(for singleChannel: CIImage) throws -> Float {
         let binCount = 256
         let histogramImage = singleChannel.applyingFilter(
@@ -559,7 +459,7 @@ public struct SplatMeshGenerator {
             parameters: [
                 kCIInputExtentKey: CIVector(cgRect: singleChannel.extent),
                 "inputCount": binCount,
-                "inputScale": 1 // raw counts, no normalisation
+                "inputScale": 1
             ])
 
         var rawBins = [UInt32](repeating: 0, count: binCount)
@@ -571,60 +471,74 @@ public struct SplatMeshGenerator {
             format: .RGBA8,
             colorSpace: nil)
 
-        // Pull the red channel (8-bit count) into a Float array
-        let counts: [Float] = rawBins.map { Float($0 & 0xFF) }
+        // The histogram might be in any channel, not just red
+        // Try all channels and use the one with data
+        var counts: [Float] = []
+
+        // Check each channel
+        for shift in [0, 8, 16, 24] {
+            let channelCounts = rawBins.map { Float(($0 >> shift) & 0xFF) }
+            let total = channelCounts.reduce(0, +)
+            if total > 0 {
+                counts = channelCounts
+                print("[DEBUG] Found histogram data in channel shift \(shift), total: \(total)")
+                break
+            }
+        }
 
         let totalPixels = counts.reduce(0, +)
-        guard totalPixels > 0 else { return 0.5 } // fallback
+        guard totalPixels > 0 else {
+            print("[DEBUG] No histogram data found!")
+            return 0.5
+        }
 
-        // Classic Otsu
+        // Standard Otsu algorithm
         var sumAll: Float = 0
         for (i, c) in counts.enumerated() {
             sumAll += c * Float(i)
         }
 
-        var weightB: Float = 0
         var sumB: Float = 0
-        var maxVariance: Float = -1
+        var wB: Float = 0
+        var maxVar: Float = -1
         var bestK = 0
 
         for k in 0 ..< binCount {
-            weightB += counts[k]
-            if weightB == 0 { continue }
+            wB += counts[k]
+            if wB == 0 { continue }
 
-            let weightF = totalPixels - weightB
-            if weightF == 0 { break }
+            let wF = totalPixels - wB
+            if wF == 0 { break }
 
             sumB += counts[k] * Float(k)
+            let mB = sumB / wB
+            let mF = (sumAll - sumB) / wF
+            let between = wB * wF * pow(mB - mF, 2)
 
-            let meanB = sumB / weightB
-            let meanF = (sumAll - sumB) / weightF
-            let between = weightB * weightF * pow(meanB - meanF, 2)
-
-            if between > maxVariance {
-                maxVariance = between
+            if between > maxVar {
+                maxVar = between
                 bestK = k
             }
         }
 
-        return Float(bestK) / Float(binCount - 1) // → 0…1
+        return Float(bestK) / Float(binCount - 1)
     }
 }
 
-// MARK: – Utilities
+// MARK: – Supporting types ------------------------------------------------------
 
 private enum MeshError: Error { case invalidImage, noContours }
+
+public struct MeshResult2D {
+    public let vertices: [SIMD2<Float>]
+    public let indices: [UInt32]
+    public let imageSize: CGSize
+}
+
+// MARK: – Simplification helper -------------------------------------------------
 
 private extension Array where Element == CGPoint {
     func simplified(tolerance: CGFloat) -> [CGPoint] {
         SwiftSimplify.simplify(self, tolerance: Float(tolerance))
     }
-}
-
-// MARK: – Result bundle ---------------------------------------------------------
-
-public struct MeshResult2D {
-    public let vertices: [SIMD2<Float>]
-    public let indices: [UInt32]
-    public let imageSize: CGSize // ← new
 }

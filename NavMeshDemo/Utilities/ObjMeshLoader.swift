@@ -343,7 +343,7 @@ final class ObjMeshLoader {
             let v1 = triangles[i + 1]
             let v2 = triangles[i + 2]
 
-            let e0 = vertices[Int(v1)] - vertices[Int(v0)]
+            let e0 = vertices[Int(v1)] - vertices[Int(v0)] //Thread 1: Fatal error: Index out of range
             let e1 = vertices[Int(v2)] - vertices[Int(v0)]
             let n = cross(e0, e1)
             let len = simd_length(n)

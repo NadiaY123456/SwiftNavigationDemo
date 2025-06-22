@@ -15,11 +15,13 @@ import UIKit
 @MainActor
 func generateMeshFromImage(
     named imageName: String,
-    channel: SplatMeshGenerator.Channel = .red,
-    maxEdgeLength: CGFloat = 1.0,
-    simplificationTolerance: CGFloat = 0.01,
-    threshold: Float? = 0.1,
-    invertMask: Bool = false
+    channel: SplatMeshGenerator.Channel,
+    maxEdgeLength: CGFloat,
+    simplificationTolerance: CGFloat,
+    threshold: Float?,
+    invertMask: Bool?,
+    morphologyRadius: Int,
+    interiorSpacingFactor: CGFloat
 ) async -> MeshResult2D? {
     guard let image = UIImage(named: imageName) else {
         print("❌  Failed to load image “\(imageName)”")
@@ -33,16 +35,25 @@ func generateMeshFromImage(
         simplificationTolerance: simplificationTolerance,
         threshold: threshold,
         channel: channel,
-        invertMask: invertMask
+        invertMask: invertMask,
+        morphologyRadius: morphologyRadius,
+        interiorSpacingFactor: interiorSpacingFactor
     )
 
     do {
-        let mesh2D = try await meshGen.mesh(from: image) // ← now returns MeshResult2D
+        // save black and white mask version for debugging
+        let maskURL = URL(fileURLWithPath:
+            "/Users/nata/Library/CloudStorage/OneDrive-Personal/CNC/VisionPro/World/mask_\(channel).png"
+        )
+        let mesh2D = try await meshGen.mesh(from: image, debugURL: maskURL)
+        print("saved mask to \(maskURL)")
 
         print("✅  Generated mesh from \(imageName) [\(channel)]:")
         print("   • Vertices  : \(mesh2D.vertices.count)")
         print("   • Triangles : \(mesh2D.indices.count / 3)")
         print("   • Image size: \(mesh2D.imageSize.width) × \(mesh2D.imageSize.height)")
+
+        // save black and white mask version for debugging
 
         return mesh2D
 
@@ -60,8 +71,10 @@ func generateSplatModel(
     channel: SplatMeshGenerator.Channel = .red,
     maxEdgeLength: CGFloat = 1.0,
     simplificationTolerance: CGFloat = 0.01,
-    threshold: Float? = 0.1,
-    invertMask: Bool = false
+    threshold: Float? = nil,
+    invertMask: Bool? = nil,
+    morphologyRadius: Int, // Radius for morphological operations, start with 2 ,
+    interiorSpacingFactor: CGFloat
 ) async throws {
     // Generate the 2-D splat mesh ---------------------------------------------------
     if let mesh2D = await generateMeshFromImage(
@@ -70,7 +83,9 @@ func generateSplatModel(
         maxEdgeLength: maxEdgeLength,
         simplificationTolerance: simplificationTolerance,
         threshold: threshold,
-        invertMask: invertMask
+        invertMask: invertMask,
+        morphologyRadius: morphologyRadius,
+        interiorSpacingFactor: interiorSpacingFactor
     ) {
         // 0️⃣ Load the terrain model -------------------------------------------------
         let myModelEntity: ModelEntity
@@ -96,7 +111,6 @@ func generateSplatModel(
         let scale: Float = 0.01
         let height: Float = -330 - 10
         let zDistance: Float = -600
-        
 
         let indices: [UInt32] = meshLoader.triangles.map { UInt32($0) }
 
@@ -118,10 +132,10 @@ func generateSplatModel(
         myModelEntity.scale = SIMD3<Float>(scale, scale, scale)
         myModelEntity.position.y += height * scale
         myModelEntity.position.z += zDistance * scale
-        
+
         // change rotation
         myModelEntity.orientation = terrainRotation
-        
+
         spaceOrigin.addChild(myModelEntity)
     }
 }
