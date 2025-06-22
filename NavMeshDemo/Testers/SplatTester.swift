@@ -45,7 +45,7 @@ func generateMeshFromImage(
         let maskURL = URL(fileURLWithPath:
             "/Users/nata/Library/CloudStorage/OneDrive-Personal/CNC/VisionPro/World/mask_\(channel).png"
         )
-        let mesh2D = try await meshGen.mesh(from: image, debugURL: maskURL)
+        let mesh2D = try await meshGen.mesh(from: image)
         print("saved mask to \(maskURL)")
 
         print("✅  Generated mesh from \(imageName) [\(channel)]:")

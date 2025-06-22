@@ -28,6 +28,15 @@
       }
     },
     {
+      "identity" : "swiftearcut",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/measuredweighed/SwiftEarcut.git",
+      "state" : {
+        "revision" : "f72356da8b873da27d869120c08d4a3009b6bf12",
+        "version" : "1.0.0"
+      }
+    },
+    {
       "identity" : "swiftsimplify",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/malcommac/SwiftSimplify.git",

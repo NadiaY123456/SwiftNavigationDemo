@@ -8,11 +8,12 @@
 //
 
 import CoreImage
-import DelaunayTriangulation
+//import DelaunayTriangulation
 import simd
 import SwiftSimplify
 import UIKit
 import Vision
+import SwiftEarcut
 
 // MARK: – Public entry point ----------------------------------------------------
 
@@ -57,59 +58,58 @@ public struct SplatMeshGenerator {
 
     // MARK: – High-level pipeline (async/await) ---------------------------------
 
-    public func mesh(from image: UIImage, debugURL: URL? = nil) async throws -> MeshResult2D {
-        print("\n[DEBUG] Starting mesh generation – channel:", channel)
-        print("[DEBUG] invertMask:", invertMask.map { "\($0)" } ?? "auto")
+    public func mesh(from image: UIImage,
+                     debugURL: URL? = nil) async throws -> MeshResult2D {
 
-        // 1. Binary mask
-        let mask = try await createBinaryMask(from: image, debugURL: debugURL)
+        // 1. Binary mask → 2. Contour tree (Vision)
+        let mask      = try await createBinaryMask(from: image, debugURL: debugURL)
+        let rootContours = try await detectContours(in: mask)          // <- NOW returns only *top-level* rings
 
-        // 2. Contours
-        let contours = try await detectContours(in: mask)
-
-        // 3. Per-contour → triangulate
         var vertices: [SIMD2<Float>] = []
-        var indices: [UInt32] = []
+        var indices : [UInt32]       = []
 
-        for (idx, contour) in contours.enumerated() {
-            print("\n[DEBUG] Processing contour \(idx) with \(contour.pointCount) points...")
+        // Walk every *outer* contour with its children as holes
+        for (idx, outer) in rootContours.enumerated() {
+            print("\n[DEBUG] ⇢ Contour \(idx) – outer \(outer.pointCount) pts, \(outer.childContours.count) holes")
 
-            let rawPoints = flattenSingleContour(contour, imageSize: image.size)
-            guard rawPoints.count >= 3 else { continue }
+            // — a.  Flatten, simplify, resample the outer ring
+            let outerRing = resample(
+                points: flattenSingleContour(outer, imageSize: image.size)
+                           .simplified(tolerance: simplificationTolerance
+                                        * min(image.size.width, image.size.height)))
 
-            let tolerance = simplificationTolerance * min(image.size.width, image.size.height)
-            let simplified = rawPoints.simplified(tolerance: tolerance)
-            print("[DEBUG] Simplified from \(rawPoints.count) to \(simplified.count) points")
+            guard outerRing.count >= 3 else { continue }
 
-            guard simplified.count >= 3 else { continue }
+            // — b.  Treat every *direct* child as a hole  (grand-children are ignored on purpose;
+            //        if your masks can nest deeper, wrap this in a recursive walk)
+            let holeRings: [[CGPoint]] = outer.childContours.compactMap { hole in
+                let simplified = flattenSingleContour(hole, imageSize: image.size)
+                                   .simplified(tolerance: simplificationTolerance
+                                                * min(image.size.width, image.size.height))
+                return simplified.count >= 3 ? resample(points: simplified) : nil
+            }
 
-            // Resample
-            let refined = resample(points: simplified)
-            print("[DEBUG] Resampled to \(refined.count) points")
+            // — c.  Robust triangulation ─────────────────────────────────────────────
+            let (localVerts, localIdx) = triangulateEarcut(outerRing: outerRing,
+                                                           holeRings: holeRings)
 
-            // Triangulate with interior points
-            let (triangulatedVertices, localIndices) = triangulateWithInterior(points: refined)
-
-            guard !localIndices.isEmpty else {
-                print("[DEBUG] No triangles generated for contour \(idx)")
+            guard !localIdx.isEmpty else {
+                print("[DEBUG]    ⤺  Earcut produced 0 triangles – skipping")
                 continue
             }
 
-            // Offset indices by current vertex count
-            let indexOffset = UInt32(vertices.count)
-            let offsetIndices = localIndices.map { $0 + indexOffset }
+            // — d.  Stitch into global mesh
+            let base = UInt32(vertices.count)
+            vertices += localVerts.map { SIMD2(Float($0.x), Float($0.y)) }
+            indices  += localIdx.map { $0 + base }
 
-            // Add ALL vertices (boundary + interior) to the result
-            let verts = triangulatedVertices.map { SIMD2(Float($0.x), Float($0.y)) }
-            vertices.append(contentsOf: verts)
-            indices.append(contentsOf: offsetIndices)
-
-            print("[DEBUG] Added \(verts.count) vertices (\(refined.count) boundary + \(verts.count - refined.count) interior) and \(localIndices.count / 3) triangles from contour \(idx)")
+            print("[DEBUG]    ➜  kept \(localVerts.count) vertices, \(localIdx.count / 3) triangles")
         }
 
-        print("[DEBUG] Final: \(vertices.count) vertices, \(indices.count / 3) triangles")
+        print("[DEBUG] FINAL: \(vertices.count) vertices, \(indices.count / 3) triangles")
         return MeshResult2D(vertices: vertices, indices: indices, imageSize: image.size)
     }
+
 
     // MARK: – Step 1: Channel isolation → threshold → morphology -----------------
 
@@ -318,16 +318,10 @@ public struct SplatMeshGenerator {
         // --------  NEW: grab *all* contours and drop the image border -------------
         let epsilon: Float = 0.001                      // edge tolerance
         let allContours = (0..<obs.contourCount).compactMap { try? obs.contour(at: $0) }
-        let realContours = allContours.filter { c in
-            // A Vision border contour has every vertex on an edge (x==0/1 || y==0/1)
-            let onEdge = c.normalizedPoints.allSatisfy { p in
-                abs(p.x) < epsilon || abs(p.x - 1) < epsilon ||
-                abs(p.y) < epsilon || abs(p.y - 1) < epsilon
-            }
-            return !onEdge
-        }
 
+        let realContours = obs.topLevelContours
         print("[DEBUG] Returning \(realContours.count) real contours")
+
         return realContours
     }
 
@@ -361,94 +355,64 @@ public struct SplatMeshGenerator {
         return out
     }
 
-    private func isPointInsidePolygon(_ p: CGPoint, polygon: [CGPoint]) -> Bool {
-        guard polygon.count >= 3 else { return false }
-        var inside = false
-        var j = polygon.count - 1
-        for i in 0 ..< polygon.count {
-            let pi = polygon[i], pj = polygon[j]
-            let intersect =
-                ((pi.y > p.y) != (pj.y > p.y)) &&
-                (p.x < (pj.x - pi.x) * (p.y - pi.y) / (pj.y - pi.y) + pi.x)
-            if intersect { inside.toggle() }
-            j = i
+    // MARK: – Robust constrained triangulation (Earcut) ----------------------------
+
+
+    private func triangulateEarcut(
+        outerRing: [CGPoint],
+        holeRings: [[CGPoint]]
+    ) -> (vertices: [CGPoint], indices: [UInt32]) {
+
+        // 0.  Force Earcut orientation: outer = CCW, holes = CW
+        func signedArea(_ ring: [CGPoint]) -> CGFloat {
+            guard ring.count >= 3 else { return 0 }
+            var sum: CGFloat = 0
+            for i in 0..<ring.count {
+                let a = ring[i], b = ring[(i + 1) % ring.count]
+                sum += (b.x - a.x) * (b.y + a.y)
+            }
+            return sum * 0.5
         }
-        return inside
+        func oriented(_ ring: [CGPoint], ccw: Bool) -> [CGPoint] {
+            (signedArea(ring) >= 0) == ccw ? ring : ring.reversed()
+        }
+
+        let outer         = oriented(outerRing, ccw: true)
+        let holePolygons  = holeRings.map { oriented($0, ccw: false) }
+
+        // 1.  Pack [x0,y0,x1,y1,…] + hole-start indices
+        var coords: [Double]  = []
+        var holeIndices: [Int] = []
+
+        coords.reserveCapacity((outer.count + holePolygons.flatMap { $0 }.count) * 2)
+
+        coords += outer.flatMap { [Double($0.x), Double($0.y)] }
+
+        var cursor = outer.count
+        for hole in holePolygons {
+            holeIndices.append(cursor)
+            coords += hole.flatMap { [Double($0.x), Double($0.y)] }
+            cursor += hole.count
+        }
+
+        // 2.  Earcut – **correct method name + optional first-param label**
+        let earcutIdx: [Int]
+        if holeIndices.isEmpty {
+            earcutIdx = Earcut.tessellate(data: coords, dim: 2)
+        } else {
+            earcutIdx = Earcut.tessellate(data: coords, holeIndices: holeIndices, dim: 2)
+        }
+
+
+
+        // 3.  Rehydrate vertices and cast indices to UInt32
+        let vertices = outer + holePolygons.flatMap { $0 }
+        let indices  = earcutIdx.map(UInt32.init)
+
+        return (vertices, indices)
     }
 
-    private func triangulateWithInterior(points: [CGPoint]) -> (vertices: [CGPoint], indices: [UInt32]) {
-        guard points.count >= 3 else { return ([], []) }
 
-        // Calculate the area to determine if we need interior points
-        var area: CGFloat = 0
-        for i in 0 ..< points.count {
-            let j = (i + 1) % points.count
-            area += points[i].x * points[j].y - points[j].x * points[i].y
-        }
-        area = abs(area) / 2
-
-        // Create a combined point set with boundary + interior points
-        var allPoints = points
-
-        // If the polygon is large enough, add interior points
-        let spacing = maxEdgeLength * interiorSpacingFactor
-        let areaThreshold = spacing * spacing * 2
-
-        // Only add interior points if polygon is “big enough”
-        if area > areaThreshold {
-            let xCoords = points.map { $0.x }
-            let yCoords = points.map { $0.y }
-            let minX = xCoords.min() ?? 0
-            let maxX = xCoords.max() ?? 0
-            let minY = yCoords.min() ?? 0
-            let maxY = yCoords.max() ?? 0
-
-            var y = minY + spacing
-            while y < maxY {
-                var x = minX + spacing
-                while x < maxX {
-                    let pt = CGPoint(x: x, y: y)
-                    if isPointInsidePolygon(pt, polygon: points) {
-                        allPoints.append(pt)
-                    }
-                    x += spacing
-                }
-                y += spacing
-            }
-            print("[DEBUG] Added \(allPoints.count - points.count) interior points")
-        }
-
-        // Now triangulate with all points (boundary + interior)
-        let dlPts = allPoints.map { Point(x: Double($0.x), y: Double($0.y)) }
-        let tris = DelaunayTriangulation.triangulate(dlPts)
-
-        // Build index lookup
-        var indexFor: [Point: UInt32] = [:]
-        for (i, p) in dlPts.enumerated() {
-            indexFor[p] = UInt32(i)
-        }
-
-        // Keep triangles whose centroid is inside
-        var kept: [UInt32] = []
-        for tri in tris {
-            guard
-                let ia = indexFor[tri.point1],
-                let ib = indexFor[tri.point2],
-                let ic = indexFor[tri.point3]
-            else { continue }
-
-            let centroid = CGPoint(
-                x: (allPoints[Int(ia)].x + allPoints[Int(ib)].x + allPoints[Int(ic)].x) / 3,
-                y: (allPoints[Int(ia)].y + allPoints[Int(ib)].y + allPoints[Int(ic)].y) / 3)
-
-            if isPointInsidePolygon(centroid, polygon: points) {
-                kept.append(contentsOf: [ia, ib, ic])
-            }
-        }
-
-        // Return both the complete point set and the indices
-        return (vertices: allPoints, indices: kept)
-    }
 
     // MARK: – Otsu threshold ----------------------------------------------------
 
