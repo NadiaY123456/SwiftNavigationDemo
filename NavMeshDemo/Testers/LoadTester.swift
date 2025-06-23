@@ -11,35 +11,61 @@ import SwiftNavigation
 
 // MARK: - Test Loading from *.obj file
 
-func testLoader() throws {
-//    let files = ["undulating.obj", "dungeon.obj", "nav_test.obj"]
+func testLoader() throws -> NavMesh? {
     let files = ["plane.obj", "planeLarge.obj"]
 
     for file in files {
         let data = try MeshLoader(file: "/Users/nata/GitHub/Practicing/SwiftNavigationDemo/NavMeshDemo/Data/\(file)")
 
         do {
-            let config = NavMeshBuilder.Config(partitionStyle: .monotone)
-            let navMesh = try NavMeshBuilder(vertices: data.vertices, triangles: data.triangles, config: config)
-            print("Navmesh for \(file)")
-            let navigator = try navMesh.makeNavMesh(agentHeight: 1, agentRadius: 0.3, agentMaxClimb: 20)
-            print(navigator)
+            var config = NavMeshConfig()
+            config.partitionStyle = .monotone
+            config.agentHeight = 1
+            config.agentRadius = 0.3
+            config.agentMaxClimb = 20
+
+            // Create the builder with the config
+            let builder = try NavMeshBuilder(vertices: data.vertices, triangles: data.triangles, config: config)
+            print("Navmesh builder for \(file)")
+            print("Tiles built: \(builder.tilesBuilt) of \(builder.totalTiles)")
+
+            // Create the NavMesh from the builder
+            let navMesh = try builder.makeNavMesh()
+            print(navMesh)
+            
+            return navMesh
+
         } catch (let e) {
             print("Error On file \(file): \(e)")
             throw e
         }
     }
+    return nil
 }
 
-func testFindPath() throws {
+ func testFindPath() throws {
     let data = try MeshLoader(file: "/Users/nata/GitHub/Practicing/recastnavigation/RecastDemo/Bin/Meshes/dungeon.obj")
-    let config = NavMeshBuilder.Config(partitionStyle: .monotone)
-    let navMesh = try NavMeshBuilder(vertices: data.vertices, triangles: data.triangles, config: config)
-    let navigator = try navMesh.makeNavMesh(agentHeight: 1, agentRadius: 0.3, agentMaxClimb: 20)
-    let query = try navigator.makeQuery()
+
+    // Configure the navigation mesh
+    var config = NavMeshConfig()
+    config.partitionStyle = .monotone
+    config.agentHeight = 1
+    config.agentRadius = 0.3
+    config.agentMaxClimb = 20
+
+    // Build the navigation mesh
+    let builder = try NavMeshBuilder(vertices: data.vertices, triangles: data.triangles, config: config)
+    print("Navmesh builder ran successfully")
+    let navMesh = try builder.makeNavMesh()
+    print("NavMesh created successfully")
+
+    // Create a query
+    let query = try navMesh.makeQuery()
+    print("Created NavMeshQuery")
 
     let start = try query.findRandomPoint(randomFunction: fakeRandom).get()
     let end = try query.findRandomPoint(randomFunction: fakeRandom).get()
+    print("Start: \(start), End: \(end)")
 
     switch query.findPathCorridor(start: start, end: end) {
     case .success(let corridor):
@@ -47,7 +73,11 @@ func testFindPath() throws {
         for poly in corridor {
             print("    PolyRef: \(poly)")
         }
-        switch query.findStraightPath(startPos: start.point3, endPos: end.point3, pathCorridor: corridor, options: [.allCrossings, .areaCrossings]) {
+
+        // Assuming StraightPathOptions is the enum type for options
+        let options: NavMeshQuery.StraightPathOptions = [.allCrossings, .areaCrossings]
+
+        switch query.findStraightPath(startPos: start.point3, endPos: end.point3, pathCorridor: corridor, options: options) {
         case .success(let found):
             for x in 0..<found.count {
                 let pidx = x*3
@@ -59,7 +89,7 @@ func testFindPath() throws {
     case .failure(let d):
         print("Failed calling findPathCorridor error, details: \(d)")
     }
-}
+ }
 
 // MARK: - Test Loading from *.bin navmesh file
 
@@ -113,8 +143,8 @@ func testBinFindPath() throws {
         }
         switch query.findStraightPath(startPos: start.point3, endPos: end.point3, pathCorridor: corridor, options: [.allCrossings, .areaCrossings]) {
         case .success(let found):
-            for x in 0..<found.count {
-                let pidx = x*3
+            for x in 0 ..< found.count {
+                let pidx = x * 3
                 print(" \(x): \(found.rawPathPoints[pidx]), \(found.rawPathPoints[pidx+1]), \(found.rawPathPoints[pidx+2]): \(found.flags[x]) at poly: \(found.polyRefs[x])")
             }
         case .failure(let d):

@@ -11,7 +11,7 @@ import simd
 import SwiftNavigation
 
 func testGeometry(selectedMesh: String) throws -> NavMeshGeometry? {
-    #if false
+    #if true
     // Load mesh in bin format
     guard let url = Bundle.main.url(forResource: selectedMesh, withExtension: "bin")
     else {
@@ -34,7 +34,7 @@ func testGeometry(selectedMesh: String) throws -> NavMeshGeometry? {
     }
     #endif
     
-    #if true
+    #if false
     // Load mesh in obj format
     let navMeshGeometry: NavMeshGeometry
     do {
@@ -54,8 +54,28 @@ func testGeometry(selectedMesh: String) throws -> NavMeshGeometry? {
     }
     #endif
     
+#if false
+    // create mesh
+    let navMeshGeometry: NavMeshGeometry
+    do {
+        if let navMesh = try testLoader() {
+            print("NavMesh generates successfully")
+            print(navMesh)
+        
+            // Extract geometry with verbose logging
+            navMeshGeometry = navMesh.extractGeometry(verbose: true)
+        } else {
+            print("❌ Failed to generate NavMesh")
+            return nil
+        }
+    } catch let e {
+        print("❌ Error On file \(selectedMesh): \(e)")
+        throw e
+    }
+    #endif
+    
     let exportPath = "/Users/nata/Library/CloudStorage/OneDrive-Personal/CNC/VisionPro/World/swiftNavMeshGeometryTester.obj"
-    let exportURL  = URL(fileURLWithPath: exportPath)
+    let exportURL = URL(fileURLWithPath: exportPath)
 
     do {
         try OBJParser.write(polygons: navMeshGeometry.polygons, to: exportURL)
