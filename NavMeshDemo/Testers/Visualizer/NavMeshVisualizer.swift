@@ -7,13 +7,12 @@
 
 import RealityKit
 import simd
-import UIKit
 import SwiftNavigation
+import UIKit
 
 // MARK: - Recast nav‑mesh → RealityKit
 
 public extension NavMeshGeometry {
-
     /// Creates an entity that visualises the whole nav‑mesh.
     ///
     /// - Parameters:
@@ -25,7 +24,6 @@ public extension NavMeshGeometry {
         showEdges: Bool = true,
         areaColor: ((_ area: UInt8) -> Material.Color)? = nil
     ) -> Entity {
-
         // -------- Colour resolver --------
         let colorForArea: (UInt8) -> Material.Color = areaColor ?? Self.defaultColor(for:)
 
@@ -57,20 +55,34 @@ public extension NavMeshGeometry {
         // Convert each area bucket into its own ModelEntity so that it
         // can have a unique material colour.
         for (areaID, bucket) in buckets {
+//            if areaID == 63 { continue } //debug 👀
             var desc = MeshDescriptor(name: "Area_\(areaID)")
-            desc.positions  = .init(bucket.positions)
+            desc.positions = .init(bucket.positions)
             desc.primitives = .triangles(bucket.indices)
-            let mesh  = try! MeshResource.generate(from: [desc])
-            let mat   = SimpleMaterial(color: colorForArea(areaID), isMetallic: false)
-            parent.addChild(ModelEntity(mesh: mesh, materials: [mat]))
+            let mesh = try! MeshResource.generate(from: [desc])
+//            var pbrMaterial = PhysicallyBasedMaterial()
+//            pbrMaterial.baseColor = .init(tint: colorForArea(areaID))
+//            pbrMaterial.roughness = 0.5
+//            pbrMaterial.metallic  = 0.0
+//            pbrMaterial.faceCulling = .none    // ← double-sided
+//            pbrMaterial.blending = .transparent(opacity: .init(scale: 1))
+//
+//            parent.addChild(ModelEntity(mesh: mesh, materials: [pbrMaterial]))
+
+            let unlitMaterial = UnlitMaterial(color: colorForArea(areaID))
+
+            parent.addChild(ModelEntity(mesh: mesh, materials: [unlitMaterial]))
         }
 
-        // -------- Optional wire‑frame --------
+        // ─── Optional wire-frame ─────────────────────────────────────────────────────
         guard showEdges else { return parent }
 
         let edgeParent = Entity()
         edgeParent.name = "NavMeshEdges"
 
+        // make them fatter and always bright
+        let edgeColor = UIColor.red
+        let edgeRadius: Float = 0.01 // ↑ up from 0.001
         for polygon in polygons {
             let verts = polygon.vertices
             guard verts.count >= 2 else { continue }
@@ -78,47 +90,78 @@ public extension NavMeshGeometry {
             for i in 0..<verts.count {
                 let a = verts[i]
                 let b = verts[(i + 1) % verts.count]
-                edgeParent.addChild(makeEdgeCylinder(from: a, to: b))
+                // use the overload that takes radius+color
+                let cyl = makeEdgeCylinder(
+                    from: a,
+                    to: b,
+                    radius: edgeRadius,
+                    color: edgeColor
+                )
+                edgeParent.addChild(cyl)
             }
         }
 
         parent.addChild(edgeParent)
+
         return parent
     }
 
     // MARK: - Default colour map
+
     /// Internal so it can be used as a default but hidden from API consumers.
-    static func defaultColor(for area: UInt8) -> Material.Color { 
-        // A short, visually distinct palette that wraps around.
-        let palette: [Material.Color] = [
-            .init(red: 0.15, green: 0.85, blue: 1.00, alpha: 0.35), // cyan
-            .init(red: 0.95, green: 0.35, blue: 0.90, alpha: 0.35), // magenta
-            .init(red: 1.00, green: 0.75, blue: 0.25, alpha: 0.35), // orange
-            .init(red: 0.35, green: 1.00, blue: 0.35, alpha: 0.35), // green
-            .init(red: 1.00, green: 0.35, blue: 0.35, alpha: 0.35), // red
-            .init(red: 0.60, green: 0.60, blue: 1.00, alpha: 0.35)  // violet
-        ]
-        return palette[Int(area) % palette.count]
+    static func defaultColor(for area: UInt8) -> Material.Color {
+        switch area {
+        case 0, 63:
+            // light grey
+            return .init(red: 0.80, green: 0.80, blue: 0.80, alpha: 0.35)
+        case 1:
+            // brown
+            return .init(red: 0.60, green: 0.40, blue: 0.20, alpha: 0.35)
+        case 2:
+            // blue
+            return .init(red: 0.25, green: 0.25, blue: 1.00, alpha: 0.35)
+        case 3:
+            // green
+            return .init(red: 0.35, green: 1.00, blue: 0.35, alpha: 0.35)
+        default:
+            // A short, visually distinct palette for all other areas
+            let palette: [Material.Color] = [
+                .init(red: 0.15, green: 0.85, blue: 1.00, alpha: 0.35), // cyan
+                .init(red: 0.95, green: 0.35, blue: 0.90, alpha: 0.35), // magenta
+                .init(red: 1.00, green: 0.75, blue: 0.25, alpha: 0.35), // orange
+                .init(red: 1.00, green: 0.35, blue: 0.35, alpha: 0.35), // red
+                .init(red: 0.60, green: 0.60, blue: 1.00, alpha: 0.35) // violet
+            ]
+            return palette[Int(area) % palette.count]
+        }
     }
 }
 
 // MARK: - Helper for edge cylinders
 
-private func makeEdgeCylinder(from start: SIMD3<Float>, to end: SIMD3<Float>) -> ModelEntity {
-    let direction = end - start
-    let length    = simd_length(direction)
-    let axis      = simd_normalize(direction)
-    let midpoint  = (start + end) * 0.5
+private func makeEdgeCylinder(
+    from start: SIMD3<Float>,
+    to end: SIMD3<Float>,
+    radius: Float = 0.005,
+    color: UIColor = .white
+) -> ModelEntity {
+    let dir = end - start
+    let length = simd_length(dir)
+    guard length > 0 else { return ModelEntity() }
 
-    // RealityKit cylinders are aligned to +Y, so rotate into place afterwards.
-    let mesh     = MeshResource.generateCylinder(height: length, radius: 0.01)
-    let material = SimpleMaterial(color: .white, isMetallic: false)
-    let entity   = ModelEntity(mesh: mesh, materials: [material])
+    // build a cylinder and give it an unlit material
+    let mesh = MeshResource.generateCylinder(height: length, radius: radius)
+    let material = UnlitMaterial(color: color)
+    let entity = ModelEntity(mesh: mesh, materials: [material])
 
-    var transform      = Transform()
-    transform.translation = midpoint
-    transform.rotation = simd_quatf(from: SIMD3<Float>(0, 1, 0), to: axis)
-    entity.transform   = transform
+    // rotate + translate into place
+    let axis = simd_normalize(dir)
+    let midpoint = (start + end) * 0.5
+    var xf = Transform()
+    xf.translation = midpoint
+    xf.rotation = simd_quatf(from: [0, 1, 0], to: axis)
+    entity.transform = xf
+
     return entity
 }
 
@@ -128,7 +171,7 @@ private extension simd_quatf {
     /// Quaternion that rotates `from` into `to`.
     init(from fromVec: SIMD3<Float>, to toVec: SIMD3<Float>) {
         let from = simd_normalize(fromVec)
-        let to   = simd_normalize(toVec)
+        let to = simd_normalize(toVec)
         let dotP = simd_dot(from, to)
 
         if dotP > 0.9999 {

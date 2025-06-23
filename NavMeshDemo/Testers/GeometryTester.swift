@@ -54,6 +54,16 @@ func testGeometry(selectedMesh: String) throws -> NavMeshGeometry? {
     }
     #endif
     
+    let exportPath = "/Users/nata/Library/CloudStorage/OneDrive-Personal/CNC/VisionPro/World/swiftNavMeshGeometryTester.obj"
+    let exportURL  = URL(fileURLWithPath: exportPath)
+
+    do {
+        try OBJParser.write(polygons: navMeshGeometry.polygons, to: exportURL)
+        print("✅ NavMesh exported to OBJ at \(exportPath)")
+    } catch {
+        print("❌ Failed to export NavMesh OBJ: \(error)")
+    }
+    
     print("\n📊 Geometry Statistics:")
     print("  Total polygons: \(navMeshGeometry.polygons.count)")
     

@@ -17,13 +17,17 @@
 		4163C9402E00A160001CA143 /* navmesh_12byte.bin in Resources */ = {isa = PBXBuildFile; fileRef = 4163C93F2E00A160001CA143 /* navmesh_12byte.bin */; };
 		4172BB932E0724FA0046C176 /* SwiftNavigation in Frameworks */ = {isa = PBXBuildFile; productRef = 4172BB922E0724FA0046C176 /* SwiftNavigation */; };
 		4172BB952E076FC60046C176 /* splat_rgba.png in Resources */ = {isa = PBXBuildFile; fileRef = 4172BB942E076FC60046C176 /* splat_rgba.png */; };
-		4182F5012E05C03F0053D065 /* SplatMeshGenerator - to delete.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4182F5002E05C03F0053D065 /* SplatMeshGenerator - to delete.swift */; };
+		4172BB9A2E084ACE0046C176 /* CrowdTester.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4172BB992E084ACE0046C176 /* CrowdTester.swift */; };
+		4172BB9C2E084D8A0046C176 /* foothill.obj in Resources */ = {isa = PBXBuildFile; fileRef = 4172BB9B2E084D8A0046C176 /* foothill.obj */; };
+		4172BB9E2E088B4E0046C176 /* NavMeshGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4172BB9D2E088B490046C176 /* NavMeshGenerator.swift */; };
+		4172BBA22E08D8D50046C176 /* splatBlue.obj in Resources */ = {isa = PBXBuildFile; fileRef = 4172BBA12E08D8D50046C176 /* splatBlue.obj */; };
+		4172BBA42E08FDEB0046C176 /* splatRed.obj in Resources */ = {isa = PBXBuildFile; fileRef = 4172BBA32E08FDEB0046C176 /* splatRed.obj */; };
 		4182F50B2E05C9450053D065 /* SplatTester.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4182F50A2E05C93C0053D065 /* SplatTester.swift */; };
 		4182F50D2E05D6E20053D065 /* SplatMeshVisualizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4182F50C2E05D6D40053D065 /* SplatMeshVisualizer.swift */; };
 		4192045C2E05F9C800C46304 /* splat_greyscale.png in Resources */ = {isa = PBXBuildFile; fileRef = 4192045B2E05F9C800C46304 /* splat_greyscale.png */; };
 		4192045E2E05FD1400C46304 /* splat_greyscale_4m.png in Resources */ = {isa = PBXBuildFile; fileRef = 4192045D2E05FD1400C46304 /* splat_greyscale_4m.png */; };
 		419204602E05FE0500C46304 /* splat_rgba_small.png in Resources */ = {isa = PBXBuildFile; fileRef = 4192045F2E05FE0500C46304 /* splat_rgba_small.png */; };
-		419204622E0618F800C46304 /* foothill.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 419204612E0618F800C46304 /* foothill.usdz */; };
+		419204622E0618F800C46304 /* foothillUSDZ.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 419204612E0618F800C46304 /* foothillUSDZ.usdz */; };
 		41E36E182E0536A7004C6058 /* planeSmall.obj in Resources */ = {isa = PBXBuildFile; fileRef = 41E36E172E0536A7004C6058 /* planeSmall.obj */; };
 		41E36E1A2E0536C3004C6058 /* plane.obj in Resources */ = {isa = PBXBuildFile; fileRef = 41E36E192E0536C3004C6058 /* plane.obj */; };
 		41E36E1C2E0536FD004C6058 /* CustomAreaTester.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41E36E1B2E0536F1004C6058 /* CustomAreaTester.swift */; };
@@ -36,7 +40,7 @@
 		4901C66C2AB4F65F00FBDBF4 /* ImmersiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4901C66B2AB4F65F00FBDBF4 /* ImmersiveView.swift */; };
 		4901C66E2AB4F66000FBDBF4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4901C66D2AB4F66000FBDBF4 /* Assets.xcassets */; };
 		4901C6712AB4F66000FBDBF4 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4901C6702AB4F66000FBDBF4 /* Preview Assets.xcassets */; };
-		4901C67A2AB4F86000FBDBF4 /* ObjMeshLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4901C6792AB4F86000FBDBF4 /* ObjMeshLoader.swift */; };
+		4901C67A2AB4F86000FBDBF4 /* MeshLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4901C6792AB4F86000FBDBF4 /* MeshLoader.swift */; };
 		4901C67C2AB4F8A600FBDBF4 /* FakeRandom.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4901C67B2AB4F8A600FBDBF4 /* FakeRandom.swift */; };
 		4901C6812AB4F9E500FBDBF4 /* dungeon.obj in Resources */ = {isa = PBXBuildFile; fileRef = 4901C67E2AB4F9E500FBDBF4 /* dungeon.obj */; };
 		4901C6822AB4F9E500FBDBF4 /* nav_test.obj in Resources */ = {isa = PBXBuildFile; fileRef = 4901C67F2AB4F9E500FBDBF4 /* nav_test.obj */; };
@@ -54,13 +58,17 @@
 		414DBD292E033F5300B3A142 /* plane2.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = plane2.bin; sourceTree = "<group>"; };
 		4163C93F2E00A160001CA143 /* navmesh_12byte.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = navmesh_12byte.bin; sourceTree = "<group>"; };
 		4172BB942E076FC60046C176 /* splat_rgba.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = splat_rgba.png; sourceTree = "<group>"; };
-		4182F5002E05C03F0053D065 /* SplatMeshGenerator - to delete.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SplatMeshGenerator - to delete.swift"; sourceTree = "<group>"; };
+		4172BB992E084ACE0046C176 /* CrowdTester.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrowdTester.swift; sourceTree = "<group>"; };
+		4172BB9B2E084D8A0046C176 /* foothill.obj */ = {isa = PBXFileReference; lastKnownFileType = text; path = foothill.obj; sourceTree = "<group>"; };
+		4172BB9D2E088B490046C176 /* NavMeshGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavMeshGenerator.swift; sourceTree = "<group>"; };
+		4172BBA12E08D8D50046C176 /* splatBlue.obj */ = {isa = PBXFileReference; lastKnownFileType = text; path = splatBlue.obj; sourceTree = "<group>"; };
+		4172BBA32E08FDEB0046C176 /* splatRed.obj */ = {isa = PBXFileReference; lastKnownFileType = text; path = splatRed.obj; sourceTree = "<group>"; };
 		4182F50A2E05C93C0053D065 /* SplatTester.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplatTester.swift; sourceTree = "<group>"; };
 		4182F50C2E05D6D40053D065 /* SplatMeshVisualizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplatMeshVisualizer.swift; sourceTree = "<group>"; };
 		4192045B2E05F9C800C46304 /* splat_greyscale.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = splat_greyscale.png; sourceTree = "<group>"; };
 		4192045D2E05FD1400C46304 /* splat_greyscale_4m.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = splat_greyscale_4m.png; sourceTree = "<group>"; };
 		4192045F2E05FE0500C46304 /* splat_rgba_small.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = splat_rgba_small.png; sourceTree = "<group>"; };
-		419204612E0618F800C46304 /* foothill.usdz */ = {isa = PBXFileReference; lastKnownFileType = file; path = foothill.usdz; sourceTree = "<group>"; };
+		419204612E0618F800C46304 /* foothillUSDZ.usdz */ = {isa = PBXFileReference; lastKnownFileType = file; path = foothillUSDZ.usdz; sourceTree = "<group>"; };
 		41E36E172E0536A7004C6058 /* planeSmall.obj */ = {isa = PBXFileReference; lastKnownFileType = text; path = planeSmall.obj; sourceTree = "<group>"; };
 		41E36E192E0536C3004C6058 /* plane.obj */ = {isa = PBXFileReference; lastKnownFileType = text; path = plane.obj; sourceTree = "<group>"; };
 		41E36E1B2E0536F1004C6058 /* CustomAreaTester.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomAreaTester.swift; sourceTree = "<group>"; };
@@ -75,7 +83,7 @@
 		4901C66D2AB4F66000FBDBF4 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		4901C6702AB4F66000FBDBF4 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		4901C6722AB4F66000FBDBF4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		4901C6792AB4F86000FBDBF4 /* ObjMeshLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjMeshLoader.swift; sourceTree = "<group>"; };
+		4901C6792AB4F86000FBDBF4 /* MeshLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshLoader.swift; sourceTree = "<group>"; };
 		4901C67B2AB4F8A600FBDBF4 /* FakeRandom.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeRandom.swift; sourceTree = "<group>"; };
 		4901C67E2AB4F9E500FBDBF4 /* dungeon.obj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = dungeon.obj; path = ../../../recastnavigation/RecastDemo/Bin/Meshes/dungeon.obj; sourceTree = "<group>"; };
 		4901C67F2AB4F9E500FBDBF4 /* nav_test.obj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = nav_test.obj; path = ../../../recastnavigation/RecastDemo/Bin/Meshes/nav_test.obj; sourceTree = "<group>"; };
@@ -105,6 +113,8 @@
 		41E36E1D2E053708004C6058 /* Testers */ = {
 			isa = PBXGroup;
 			children = (
+				4172BB9D2E088B490046C176 /* NavMeshGenerator.swift */,
+				4172BB992E084ACE0046C176 /* CrowdTester.swift */,
 				4182F50A2E05C93C0053D065 /* SplatTester.swift */,
 				41E36E1E2E05373F004C6058 /* LoadTester.swift */,
 				41E36E1B2E0536F1004C6058 /* CustomAreaTester.swift */,
@@ -185,9 +195,8 @@
 		4901C6782AB4F84A00FBDBF4 /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
-				4901C6792AB4F86000FBDBF4 /* ObjMeshLoader.swift */,
+				4901C6792AB4F86000FBDBF4 /* MeshLoader.swift */,
 				4901C67B2AB4F8A600FBDBF4 /* FakeRandom.swift */,
-				4182F5002E05C03F0053D065 /* SplatMeshGenerator - to delete.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -195,9 +204,11 @@
 		4901C67D2AB4F9C700FBDBF4 /* Data */ = {
 			isa = PBXGroup;
 			children = (
-				419204612E0618F800C46304 /* foothill.usdz */,
+				419204612E0618F800C46304 /* foothillUSDZ.usdz */,
+				4172BBA32E08FDEB0046C176 /* splatRed.obj */,
 				4192045D2E05FD1400C46304 /* splat_greyscale_4m.png */,
 				4172BB942E076FC60046C176 /* splat_rgba.png */,
+				4172BBA12E08D8D50046C176 /* splatBlue.obj */,
 				41E36E242E0541D1004C6058 /* planeLarge.obj */,
 				4192045F2E05FE0500C46304 /* splat_rgba_small.png */,
 				414DBD272E03362A00B3A142 /* plane.usdz */,
@@ -208,6 +219,7 @@
 				414D7F652E00847C00999B62 /* navmesh_16byte.bin */,
 				414D7F612E007D3600999B62 /* nav_test.bin */,
 				414D7F632E007FFB00999B62 /* navmeshWithIssues.bin */,
+				4172BB9B2E084D8A0046C176 /* foothill.obj */,
 				41E36E192E0536C3004C6058 /* plane.obj */,
 				4901C67E2AB4F9E500FBDBF4 /* dungeon.obj */,
 				4901C67F2AB4F9E500FBDBF4 /* nav_test.obj */,
@@ -287,6 +299,7 @@
 				41E36E1A2E0536C3004C6058 /* plane.obj in Resources */,
 				41E36E252E0541D1004C6058 /* planeLarge.obj in Resources */,
 				4901C6812AB4F9E500FBDBF4 /* dungeon.obj in Resources */,
+				4172BB9C2E084D8A0046C176 /* foothill.obj in Resources */,
 				4192045C2E05F9C800C46304 /* splat_greyscale.png in Resources */,
 				4901C6832AB4F9E500FBDBF4 /* undulating.obj in Resources */,
 				419204602E05FE0500C46304 /* splat_rgba_small.png in Resources */,
@@ -296,11 +309,13 @@
 				4901C6712AB4F66000FBDBF4 /* Preview Assets.xcassets in Resources */,
 				4172BB952E076FC60046C176 /* splat_rgba.png in Resources */,
 				4901C66E2AB4F66000FBDBF4 /* Assets.xcassets in Resources */,
-				419204622E0618F800C46304 /* foothill.usdz in Resources */,
+				419204622E0618F800C46304 /* foothillUSDZ.usdz in Resources */,
 				41E36E182E0536A7004C6058 /* planeSmall.obj in Resources */,
 				414D7F662E00847C00999B62 /* navmesh_16byte.bin in Resources */,
 				414D7F622E007D3600999B62 /* nav_test.bin in Resources */,
 				414D7F642E007FFB00999B62 /* navmeshWithIssues.bin in Resources */,
+				4172BBA22E08D8D50046C176 /* splatBlue.obj in Resources */,
+				4172BBA42E08FDEB0046C176 /* splatRed.obj in Resources */,
 				414DBD2A2E033F5300B3A142 /* plane2.bin in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -313,8 +328,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				4901C66A2AB4F65F00FBDBF4 /* ContentView.swift in Sources */,
-				4182F5012E05C03F0053D065 /* SplatMeshGenerator - to delete.swift in Sources */,
-				4901C67A2AB4F86000FBDBF4 /* ObjMeshLoader.swift in Sources */,
+				4172BB9A2E084ACE0046C176 /* CrowdTester.swift in Sources */,
+				4901C67A2AB4F86000FBDBF4 /* MeshLoader.swift in Sources */,
 				41E36E1F2E053764004C6058 /* LoadTester.swift in Sources */,
 				4182F50B2E05C9450053D065 /* SplatTester.swift in Sources */,
 				4901C6682AB4F65F00FBDBF4 /* NavMeshDemoApp.swift in Sources */,
@@ -322,6 +337,7 @@
 				4182F50D2E05D6E20053D065 /* SplatMeshVisualizer.swift in Sources */,
 				41E36E1C2E0536FD004C6058 /* CustomAreaTester.swift in Sources */,
 				4901C66C2AB4F65F00FBDBF4 /* ImmersiveView.swift in Sources */,
+				4172BB9E2E088B4E0046C176 /* NavMeshGenerator.swift in Sources */,
 				414DBD222E030B8700B3A142 /* GeometryTester.swift in Sources */,
 				4901C67C2AB4F8A600FBDBF4 /* FakeRandom.swift in Sources */,
 			);

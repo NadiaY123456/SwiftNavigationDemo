@@ -10,14 +10,14 @@ import RealityKit
 import SwiftNavigation
 
 func testCustomAreaLoader() throws -> NavMesh? {
-    let mainMeshFile = "planeLarge.obj"
-    let roadMeshFile = "plane.obj"
+    let mainMeshFile = "foothill.obj"
+    let roadMeshFile = "splatBlue.obj"
     
     print("Loading main mesh: \(mainMeshFile)")
-    let mainMeshData = try ObjMeshLoader(file: "/Users/nata/GitHub/Practicing/SwiftNavigationDemo/NavMeshDemo/Data/\(mainMeshFile)")
+    let mainMeshData = try MeshLoader(file: "/Users/nata/GitHub/Practicing/SwiftNavigationDemo/NavMeshDemo/Data/\(mainMeshFile)")
     
     print("Loading road mesh: \(roadMeshFile)")
-    let roadMeshData = try ObjMeshLoader(file: "/Users/nata/GitHub/Practicing/SwiftNavigationDemo/NavMeshDemo/Data/\(roadMeshFile)")
+    let roadMeshData = try MeshLoader(file: "/Users/nata/GitHub/Practicing/SwiftNavigationDemo/NavMeshDemo/Data/\(roadMeshFile)")
     
     // Define multiple areas
     let areas = [

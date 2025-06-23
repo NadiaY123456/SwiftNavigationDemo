@@ -43,35 +43,23 @@ struct ContentView: View {
 
             Task {
                 if newValue {
-//                    // Print the size of dtLink structure
-//                    print("Size of dtLink: \(MemoryLayout<dtLink>.size)")
-//                    print("Size of dtPolyRef: \(MemoryLayout<dtPolyRef>.size)")
-//
-//                    // Check if DT_POLYREF64 is enabled by examining sizes
-//                    if MemoryLayout<dtPolyRef>.size == 8 {
-//                        print("Using 64-bit polygon references (DT_POLYREF64 enabled)")
-//                    } else if MemoryLayout<dtPolyRef>.size == 4 {
-//                        print("Using 32-bit polygon references (DT_POLYREF64 disabled)")
-//                    } else {
-//                        print("Unknown polygon reference size: \(MemoryLayout<dtPolyRef>.size)")
-//                    }
+                    await buildFoothillNavMeshExample(on: spaceOrigin)
 
                     do {
-                        try await generateSplatModel(
-                            terrainName: "foothill",
-                            terrainRotation: simd_quatf(angle: .pi / 2, axis: [0, 1, 0]),
-                            splatName: "splat_rgba.png",
-                            channel: .red,
-                            maxEdgeLength: 50,
-                            simplificationTolerance: 0.001,
-                            threshold: 0.1, //nil, //(nil = auto)
-                            invertMask: false, //(nil = auto),
-                            morphologyRadius: 0, // Try reducing or removing morphology for images with distinct regions to avoid eroding thin features: 0, otherwise 2
-                            interiorSpacingFactor: 1000 // interiorSpacing = maxEdgeLength * interiorSpacingFactor
-
-                        )
+//                        try await generateSplatModel(
+//                            terrainName: "foothillUSDZ",
+//                            terrainRotation: simd_quatf(angle: .pi / 2, axis: [0, 1, 0]),
+//                            splatName: "splat_rgba.png",
+//                            channel: .red,
+//                            maxEdgeLength: 50,
+//                            simplificationTolerance: 0.001,
+//                            threshold: 0.1, //nil, //(nil = auto)
+//                            invertMask: false, //(nil = auto),
+//                            morphologyRadius: 0, // Try reducing or removing morphology for images with distinct regions to avoid eroding thin features: 0, otherwise 2
+//                            interiorSpacingFactor: 1000 // interiorSpacing = maxEdgeLength * interiorSpacingFactor
+//                        )
 #if false
-                        let selectedMesh = "plane2"
+                        let selectedMesh = "foothill"
 
 //                        try debugBinFindPath(selectedMesh: selectedMesh)
 //                        print ("debugBinFindPath function run successfully for \(selectedMesh)")
@@ -84,19 +72,19 @@ struct ContentView: View {
                             spaceOrigin.addChild(navMeshSampleEntity)
                             print("NavMesh Sample Entity added to spaceOrigin at position \(navMeshSampleEntity.position) and scale \(navMeshSampleEntity.scale)")
 
-                            // 2. Asynchronously load the USDZ model
-                            Task {
-                                do {
-                                    let planeModelEntity = try await ModelEntity(named: "plane")
-                                    // set scale to 1
-                                    planeModelEntity.scale = .init(x: 1, y: 1, z: 1)
-                                    // add the model to the spaceOrigin
-                                    spaceOrigin.addChild(planeModelEntity)
-                                    print("Loaded plane model at position \(planeModelEntity.position), scale \(planeModelEntity.scale)")
-                                } catch {
-                                    print("Error loading plane.usdz:", error)
-                                }
-                            }
+//                            // 2. Asynchronously load the USDZ model
+//                            Task {
+//                                do {
+//                                    let planeModelEntity = try await ModelEntity(named: "foothillUSDZ")
+//                                    // set scale to 1
+//                                    planeModelEntity.scale = .init(x: 1, y: 1, z: 1)
+//                                    // add the model to the spaceOrigin
+//                                    spaceOrigin.addChild(planeModelEntity)
+//                                    print("Loaded plane model at position \(planeModelEntity.position), scale \(planeModelEntity.scale)")
+//                                } catch {
+//                                    print("Error loading plane.usdz:", error)
+//                                }
+//                            }
 
                         } else {
                             diagnostic = "TestGeometry returned nil for \(selectedMesh)"

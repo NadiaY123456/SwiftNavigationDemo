@@ -16,7 +16,7 @@ func testLoader() throws {
     let files = ["plane.obj", "planeLarge.obj"]
 
     for file in files {
-        let data = try ObjMeshLoader(file: "/Users/nata/GitHub/Practicing/SwiftNavigationDemo/NavMeshDemo/Data/\(file)")
+        let data = try MeshLoader(file: "/Users/nata/GitHub/Practicing/SwiftNavigationDemo/NavMeshDemo/Data/\(file)")
 
         do {
             let config = NavMeshBuilder.Config(partitionStyle: .monotone)
@@ -32,7 +32,7 @@ func testLoader() throws {
 }
 
 func testFindPath() throws {
-    let data = try ObjMeshLoader(file: "/Users/nata/GitHub/Practicing/recastnavigation/RecastDemo/Bin/Meshes/dungeon.obj")
+    let data = try MeshLoader(file: "/Users/nata/GitHub/Practicing/recastnavigation/RecastDemo/Bin/Meshes/dungeon.obj")
     let config = NavMeshBuilder.Config(partitionStyle: .monotone)
     let navMesh = try NavMeshBuilder(vertices: data.vertices, triangles: data.triangles, config: config)
     let navigator = try navMesh.makeNavMesh(agentHeight: 1, agentRadius: 0.3, agentMaxClimb: 20)

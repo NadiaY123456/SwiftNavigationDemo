@@ -91,7 +91,7 @@ func generateSplatModel(
         // 0️⃣ Load the terrain model -------------------------------------------------
         let myModelEntity: ModelEntity
         do {
-            myModelEntity = try await ModelEntity(named: "foothill")
+            myModelEntity = try await ModelEntity(named: "foothillUSDZ")
             myModelEntity.scale = [1, 1, 1]
             print("Loaded model at pos \(myModelEntity.position), scale \(myModelEntity.scale)")
 
@@ -101,7 +101,7 @@ func generateSplatModel(
         }
 
         // 1️⃣ Convert 2-D → 3-D using ObjMeshLoader ---------------------------------
-        let meshLoader = ObjMeshLoader(splatMesh2D: mesh2D, terrainModel: myModelEntity, terrainRotation: terrainRotation)
+        let meshLoader = MeshLoader(splatMesh2D: mesh2D, terrainModel: myModelEntity, terrainRotation: terrainRotation)
 
         // 2️⃣ (Optional) write the OBJ to disk --------------------------------------
         let outURL = URL(fileURLWithPath:
