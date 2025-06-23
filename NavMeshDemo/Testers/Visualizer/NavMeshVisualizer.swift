@@ -22,7 +22,8 @@ public extension NavMeshGeometry {
     /// - Returns: An entity ready to be inserted into your scene on the main thread.
     func makeNavMeshEntity(
         showEdges: Bool = true,
-        areaColor: ((_ area: UInt8) -> Material.Color)? = nil
+        areaColor: ((_ area: UInt8) -> Material.Color)? = nil,
+        edgeRadius: Float? = 0.01
     ) -> Entity {
         // -------- Colour resolver --------
         let colorForArea: (UInt8) -> Material.Color = areaColor ?? Self.defaultColor(for:)
@@ -82,7 +83,8 @@ public extension NavMeshGeometry {
 
         // make them fatter and always bright
         let edgeColor = UIColor.red
-        let edgeRadius: Float = 0.01 // ↑ up from 0.001
+        
+        let edgeRadius = edgeRadius ?? 0.01 // ↑ up from 0.001
         for polygon in polygons {
             let verts = polygon.vertices
             guard verts.count >= 2 else { continue }

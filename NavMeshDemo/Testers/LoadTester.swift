@@ -12,13 +12,16 @@ import SwiftNavigation
 // MARK: - Test Loading from *.obj file
 
 func testLoader() throws -> NavMesh? {
-    let files = ["plane.obj", "planeLarge.obj"]
+    let files = ["foothill.obj"]
+//    let files = ["plane.obj"]
+
 
     for file in files {
         let data = try MeshLoader(file: "/Users/nata/GitHub/Practicing/SwiftNavigationDemo/NavMeshDemo/Data/\(file)")
 
         do {
-            var config = NavMeshConfig()
+//            var config = NavMeshConfig()
+            var config = customNavMeshConfig
             config.partitionStyle = .monotone
             config.agentHeight = 1
             config.agentRadius = 0.3

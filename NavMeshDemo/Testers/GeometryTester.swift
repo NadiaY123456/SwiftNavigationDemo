@@ -11,7 +11,7 @@ import simd
 import SwiftNavigation
 
 func testGeometry(selectedMesh: String) throws -> NavMeshGeometry? {
-    #if true
+    #if false
     // Load mesh in bin format
     guard let url = Bundle.main.url(forResource: selectedMesh, withExtension: "bin")
     else {
@@ -54,7 +54,7 @@ func testGeometry(selectedMesh: String) throws -> NavMeshGeometry? {
     }
     #endif
     
-#if false
+#if true
     // create mesh
     let navMeshGeometry: NavMeshGeometry
     do {

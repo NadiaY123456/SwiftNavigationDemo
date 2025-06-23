@@ -46,7 +46,7 @@ struct ContentView: View {
 //                    await buildFoothillNavMeshExample(on: spaceOrigin)
 
                     do {
-                        try testFindPath()
+//                        try testLoader()
 //                        try await generateSplatModel(
 //                            terrainName: "foothillUSDZ",
 //                            terrainRotation: simd_quatf(angle: .pi / 2, axis: [0, 1, 0]),
