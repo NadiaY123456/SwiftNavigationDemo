@@ -149,6 +149,25 @@ public func buildFoothillNavMeshExample(
         } catch {
             print("❌ Failed to export NavMesh BIN: \(error)")
         }
+        
+        // • USDA
+        let usdaURL = exportBaseURL.appendingPathComponent("navmesh.usda")
+        do {
+            try geometry!.exportToUSDA(filePath: usdaURL.path)
+            print("✅ NavMesh exported to USDA at \(usdaURL.path)")
+        } catch {
+            print("❌ Failed to export NavMesh USDA: \(error)")
+        }
+        
+        let usdaURLtiled = exportBaseURL.appendingPathComponent("navmesh_tiled.usda")
+        do {
+            try geometry!.exportToUSDATiled(filePath: usdaURLtiled.path)
+            print("✅ NavMesh exported to tiled USDA at \(usdaURLtiled.path)")
+        } catch {
+            print("❌ Failed to export tiled NavMesh USDA: \(error)")
+        }
+
+       
     }
 
     // ────────────────────────────────────────────────
@@ -212,13 +231,22 @@ public func buildFoothillNavMeshExample(
     // Compute bounding sphere center & radius
     let (meshCenter, meshRadius): (SIMD3<Float>, Float)
     if let geom = geometry {
+        // NavMesh geometry available → use its bounding sphere
         let sphere = geom.boundingSphere()
         meshCenter = sphere.center
         meshRadius = sphere.radius
+    } else if let terr = terrainEntity {
+        // No NavMesh geometry, but we do have the terrain → use its visualBounds
+        let bounds = terr.visualBounds(relativeTo: nil)
+        meshCenter = bounds.center
+        // extents are full widths; radius is roughly half the diagonal
+        meshRadius = length(bounds.extents) * 0.5
     } else {
-        meshCenter = SIMD3<Float>(repeating: 0)
+        // All else failed—fall back to origin + unit radius
+        meshCenter = .zero
         meshRadius = 1.0
     }
+
     let root = Entity()
     if let nav = navMeshEntity {
         nav.name = "NavMesh"

@@ -55,7 +55,7 @@ struct ImmersiveView: View {
         // even if the user immediately hides one of them.
         await buildFoothillNavMeshExample(
             on: container,
-            terrainFile: "foothillUSDZ_centered.usdz",
+            terrainFile: "plane.usdz", //"foothillUSDZ_centered.usdz",
             display: .both,                         // <— always both
             splatFile: "splat_rgba",
             splatRotationDegrees: 90,
