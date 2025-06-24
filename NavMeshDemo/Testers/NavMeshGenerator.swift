@@ -142,7 +142,7 @@ public func buildFoothillNavMeshExample(
         }
 
         // • BIN
-        let binURL = exportBaseURL.appendingPathComponent("swiftNavMesh.bin")
+        let binURL = exportBaseURL.appendingPathComponent("all_tiles_navmesh.bin")
         do {
             try navMesh.save(to: binURL)
             print("✅ NavMesh exported to BIN at \(binURL.path)")
@@ -164,6 +164,7 @@ public func buildFoothillNavMeshExample(
             showEdges: shouldDrawEdges,
             showTileBounds: false
         )
+        
     }
 
     if showTerrain {
@@ -220,11 +221,13 @@ public func buildFoothillNavMeshExample(
     }
     let root = Entity()
     if let nav = navMeshEntity {
+        nav.name = "NavMesh"
         nav.position = -meshCenter
         nav.orientation = simd_quatf(angle: .pi / 2, axis: SIMD3(1, 0, 0))
         root.addChild(nav)
     }
     if let terr = terrainEntity {
+        terr.name = "Terrain"
         terr.position = -meshCenter
         terr.orientation = simd_quatf(angle: .pi / 2, axis: SIMD3(1, 0, 0))
         root.addChild(terr)
