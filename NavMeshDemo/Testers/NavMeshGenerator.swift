@@ -5,108 +5,235 @@ import UIKit
 
 // MARK: - Example Visualization
 
+/// Choose what to visualise when building the demo.
+public enum DisplayOption {
+    case navMeshOnly // default – keeps existing behaviour
+    case terrainOnly
+    case both
+}
+
 /// Example function to build a NavMesh for the "foothill" model and visualize it under a given scene origin.
+
+/*
+ • `FoothillDisplayOption.none` — render nothing, useful if you only want export stats/OBJ.
+ • `terrainFile` (String) — accepts either a USDZ/RealityKit model **name** *or* an absolute/relative
+   path to an `.obj`.  The terrain source is inferred from the file‑extension.
+ • `splatFile` and `splatRotationDegrees` inputs so callers can swap textures or orientations easily.
+ */
+
+// MARK: Visual toggle
+
+public enum FoothillDisplayOption {
+    case navMesh
+    case terrain
+    case both
+    case none
+}
+
 @MainActor
-public func buildFoothillNavMeshExample(on spaceOrigin: Entity) async {
-    // 1️⃣ Define the terrain source
-    let terrainName = "foothillUSDZ_centered"
-    let terrainSource = NavMeshGenerator.TerrainSource.model(name: terrainName)
-    print("Using terrain: \(terrainName)")
-
-    // 2️⃣ Load and rotate the splat image to match terrain orientation
-    let imageName = "splat_rgba"
-    guard let originalSplat = UIImage(named: imageName) else {
-        print("❌ Failed to load image \(imageName)")
-        return
+public func buildFoothillNavMeshExample(
+    on spaceOrigin: Entity,
+    terrainFile: String,
+    display: FoothillDisplayOption = .both,
+    splatFile: String = "splat_rgba",
+    splatRotationDegrees: CGFloat = 90.0,
+    exportDirectory: String
+) async {
+    // ────────────────────────────────────────────────
+    // 1️⃣ Resolve terrain source from the file-extension
+    // ────────────────────────────────────────────────
+    let ext = URL(fileURLWithPath: terrainFile).pathExtension.lowercased()
+    let terrainSource: NavMeshGenerator.TerrainSource
+    switch ext {
+    case "obj":
+        terrainSource = .obj(path: terrainFile, scale: 1.0)
+        print("Using OBJ terrain: \(terrainFile)")
+    case "usdz", "usd":
+        let name = URL(fileURLWithPath: terrainFile).deletingPathExtension().lastPathComponent
+        terrainSource = .model(name: name)
+        print("Using USDZ terrain: \(name)")
+    default:
+        terrainSource = .model(name: terrainFile)
+        print("Using bundled model: \(terrainFile)")
     }
 
-    // Rotate the splat image 90 degrees counter-clockwise to match terrain
-    guard let rotatedSplat = originalSplat.rotated90Clockwise() else {
-        print("❌ Failed to rotate splat image")
-        return
-    }
+    // Determine visibility
+    let showNavMesh = (display == .navMesh) || (display == .both)
+    let showTerrain = (display == .terrain) || (display == .both)
 
-    // Example channels (green = road, blue = water)
-    let roadChannel = NavMeshGenerator.SplatDescriptor.ChannelInfo(channel: .green, areaCode: 2)
-    let waterChannel = NavMeshGenerator.SplatDescriptor.ChannelInfo(channel: .blue, areaCode: 3)
-    let splatDesc = NavMeshGenerator.SplatDescriptor(
-        name: "foothillSplat",
-        image: rotatedSplat, // Use the rotated image
-        channels: [waterChannel, roadChannel]
-    )
-
-    // 3️⃣ Build the NavMesh
-    let navMesh: NavMesh
-    do {
-        navMesh = try await NavMeshGenerator.makeNavMesh(
-            terrain: terrainSource,
-            splats: [splatDesc],
-            config: customNavMeshConfig,
-            agentHeight: 2.0,
-            agentRadius: 0.5,
-            agentMaxClimb: 45.0
+    // ────────────────────────────────────────────────
+    // 2️⃣ Build NavMesh & Exports (only if requested)
+    // ────────────────────────────────────────────────
+    var geometry: NavMeshGeometry?
+    if showNavMesh {
+        // ────────────────────────────────────────────────
+        // Load + rotate the splat texture
+        // ────────────────────────────────────────────────
+        guard let originalSplat = UIImage(named: splatFile) else {
+            print("❌ Failed to load splat \(splatFile)"); return
+        }
+        let rotatedSplat: UIImage
+        switch Int(splatRotationDegrees) % 360 {
+        case 0: rotatedSplat = originalSplat
+        case 90: rotatedSplat = originalSplat.rotated90Clockwise()!
+        case 270: rotatedSplat = originalSplat.rotated90CounterClockwise()!
+        default: rotatedSplat = originalSplat.rotated(degrees: splatRotationDegrees) ?? originalSplat
+        }
+        let roadChannel = NavMeshGenerator.SplatDescriptor.ChannelInfo(channel: .green, areaCode: 2)
+        let waterChannel = NavMeshGenerator.SplatDescriptor.ChannelInfo(channel: .blue, areaCode: 3)
+        let splatDesc = NavMeshGenerator.SplatDescriptor(
+            name: "\(splatFile)_splat",
+            image: rotatedSplat,
+            channels: [waterChannel, roadChannel]
         )
-    } catch {
-        print("NavMesh generation failed: \(error)")
-        return
-    }
 
-    // 4️⃣ Extract geometry
-    let geometry = navMesh.extractGeometry(verbose: true)
-
-    // Summarize geometry by area
-    let areaCounts = Dictionary(grouping: geometry.polygons, by: { $0.area })
-        .mapValues { $0.count }
-
-    // Print sorted by area code
-    for (area, count) in areaCounts.sorted(by: { $0.key < $1.key }) {
-        print("Area code \(area): \(count) polygons")
-    }
-
-    // Export NavMesh as OBJ
-    let exportPath = "/Users/nata/Library/CloudStorage/OneDrive-Personal/CNC/VisionPro/World/swiftNavMesh.obj"
-    let exportURL = URL(fileURLWithPath: exportPath)
-
-    do {
-        var allVertices: [SIMD3<Float>] = []
-        var allIndices: [Int32] = []
-
-        // Flatten every polygon, fan-triangulating it
-        for poly in geometry.polygons {
-            let baseIndex = Int32(allVertices.count)
-            allVertices += poly.vertices
-
-            let vCount = poly.vertices.count
-            for i in 1 ..< vCount - 1 {
-                allIndices += [
-                    baseIndex,
-                    baseIndex + Int32(i),
-                    baseIndex + Int32(i + 1)
-                ]
-            }
+        // ────────────────────────────────────────────────
+        // Build the NavMesh
+        // ────────────────────────────────────────────────
+        let navMesh: NavMesh
+        do {
+            navMesh = try await NavMeshGenerator.makeNavMesh(
+                terrain: terrainSource,
+                splats: [splatDesc],
+                config: customNavMeshConfig,
+                agentHeight: 2.0,
+                agentRadius: 0.5,
+                agentMaxClimb: 45.0
+            )
+        } catch {
+            print("❌ NavMesh generation failed: \(error)"); return
         }
 
-        try OBJParser.write(vertices: allVertices,
-                            triangles: allIndices,
-                            to: exportURL)
-        print("✅ NavMesh exported to OBJ at \(exportPath)")
-    } catch {
-        print("❌ Failed to export NavMesh OBJ: \(error)")
+        // ────────────────────────────────────────────────
+        // Extract + summarise geometry
+        // ────────────────────────────────────────────────
+        geometry = navMesh.extractGeometry(verbose: true)
+        let areaCounts = Dictionary(grouping: geometry!.polygons, by: { $0.area })
+            .mapValues { $0.count }
+        for (area, count) in areaCounts.sorted(by: { $0.key < $1.key }) {
+            print("Area code \(area): \(count) polygons")
+        }
+
+        // ────────────────────────────────────────────────
+        // Export OBJ & BIN
+        // ────────────────────────────────────────────────
+        let exportBaseURL = URL(fileURLWithPath: exportDirectory, isDirectory: true)
+
+        // • OBJ
+        let objURL = exportBaseURL.appendingPathComponent("swiftNavMesh.obj")
+        var allVertices: [SIMD3<Float>] = []
+        var allIndices: [Int32] = []
+        for polygon in geometry!.polygons {
+            let baseIndex = Int32(allVertices.count)
+            allVertices += polygon.vertices
+            for vertexIndex in 1 ..< polygon.vertices.count - 1 {
+                allIndices += [baseIndex,
+                               baseIndex + Int32(vertexIndex),
+                               baseIndex + Int32(vertexIndex + 1)]
+            }
+        }
+        do {
+            try OBJParser.write(vertices: allVertices,
+                                triangles: allIndices,
+                                to: objURL)
+            print("✅ NavMesh exported to OBJ at \(objURL.path)")
+        } catch {
+            print("❌ Failed to export NavMesh OBJ: \(error)")
+        }
+
+        // • BIN
+        let binURL = exportBaseURL.appendingPathComponent("swiftNavMesh.bin")
+        do {
+            try navMesh.save(to: binURL)
+            print("✅ NavMesh exported to BIN at \(binURL.path)")
+        } catch {
+            print("❌ Failed to export NavMesh BIN: \(error)")
+        }
     }
 
-    // Decide whether to draw edges based on polygon count
-    let shouldDrawEdges = geometry.polygons.count < 1_000 // tweak to taste
+    // ────────────────────────────────────────────────
+    // 3️⃣ Visual entities (optional)
+    // ────────────────────────────────────────────────
+    var navMeshEntity: Entity?
+    var terrainEntity: Entity?
 
-    // 5️⃣ Create visualiser entity
-    let navEntity = geometry.makeOptimizedNavMeshEntity(
-        polygonThreshold: 500, // tile/area batching threshold
-        showEdges: shouldDrawEdges, //
-        showTileBounds: false
-    )
+    if showNavMesh, let geom = geometry {
+        let shouldDrawEdges = geom.polygons.count < 1_000
+        navMeshEntity = geom.makeOptimizedNavMeshEntity(
+            polygonThreshold: 500,
+            showEdges: shouldDrawEdges,
+            showTileBounds: false
+        )
+    }
 
-    // 6️⃣ Add to scene origin
-    spaceOrigin.addChild(navEntity)
-    print("✅ NavMesh visualized under spaceOrigin")
+    if showTerrain {
+        switch terrainSource {
+        case .model(let name):
+            do {
+                let modelEntity = try await ModelEntity(named: name, in: .main)
+                modelEntity.scale = .one
+                // set terrain to red - debug 👀
+                let redMat = SimpleMaterial(color: .red, isMetallic: false)
+                modelEntity.model?.materials = Array(
+                    repeating: redMat,
+                    count: modelEntity.model?.materials.count ?? 1
+                )
+                
+                terrainEntity = modelEntity
+                print("✅ Terrain model added")
+            } catch {
+                print("⚠️ Failed to load terrain model: \(error)")
+            }
+        case .obj(let path, let scale):
+            do {
+                let loader = try MeshLoader(file: path)
+                var desc = MeshDescriptor()
+                desc.positions = .init(loader.vertices)
+                desc.primitives = .triangles(loader.triangles.map { UInt32($0) })
+                let mesh = try MeshResource.generate(from: [desc])
+                let mat = SimpleMaterial(color: .systemGray.withAlphaComponent(0.5), isMetallic: false)
+                let modelEntity = ModelEntity(mesh: mesh, materials: [mat])
+                modelEntity.scale = SIMD3(repeating: scale)
+                terrainEntity = modelEntity
+            } catch {
+                print("❌ Failed to build terrain entity from OBJ: \(error)")
+            }
+        }
+    }
+
+    // ────────────────────────────────────────────────
+    // 4️⃣ Shared transform + camera framing
+    // ────────────────────────────────────────────────
+    guard showNavMesh || showTerrain else {
+        print("⚠️ No visual entities requested (display = .none) – skipping scene insertion.")
+        return
+    }
+    // Compute bounding sphere center & radius
+    let (meshCenter, meshRadius): (SIMD3<Float>, Float)
+    if let geom = geometry {
+        let sphere = geom.boundingSphere()
+        meshCenter = sphere.center
+        meshRadius = sphere.radius
+    } else {
+        meshCenter = SIMD3<Float>(repeating: 0)
+        meshRadius = 1.0
+    }
+    let root = Entity()
+    if let nav = navMeshEntity {
+        nav.position = -meshCenter
+        nav.orientation = simd_quatf(angle: .pi / 2, axis: SIMD3(1, 0, 0))
+        root.addChild(nav)
+    }
+    if let terr = terrainEntity {
+        terr.position = -meshCenter
+        terr.orientation = simd_quatf(angle: .pi / 2, axis: SIMD3(1, 0, 0))
+        root.addChild(terr)
+    }
+    let verticalFOV: Float = .pi / 3
+    let cameraDistance = meshRadius / sin(verticalFOV * 0.5) * 0.5
+    root.position = SIMD3(0, 0, -cameraDistance)
+    spaceOrigin.addChild(root)
+    print("✅ buildFoothillNavMeshExample complete – displayed: \(display)")
 }
 
 /// Utility for building a Detour NavMesh from an OBJ or RealityKit terrain and one or more splat mask images,

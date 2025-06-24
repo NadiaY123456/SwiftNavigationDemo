@@ -22,7 +22,22 @@ struct ImmersiveView: View {
             // FULL END-TO-END GENERATION WITH CUSTOM AREAS
             if buildFoothillNavMeshExampleBool {
                 Task {
-                    await buildFoothillNavMeshExample(on: spaceOrigin)
+                    let splatFile = "splat_rgba"
+                    let terrainFileUSDZ = "foothillUSDZ_centered.usdz"
+//                    let terrainFileUSDZ = "plane.usdz"
+
+//                    let terrainFileObj = "/Users/nata/GitHub/Practicing/SwiftNavigationDemo/NavMeshDemo/Data/plane.obj"
+                    let exportDir = "/Users/nata/Library/CloudStorage/OneDrive-Personal/CNC/VisionPro/World/"
+
+                    // Build + export both OBJ and BIN
+                    await buildFoothillNavMeshExample(
+                        on: spaceOrigin,
+                        terrainFile: terrainFileUSDZ, // "/path/to/plane.obj" or "plane.usdz"
+                        display: .both,
+                        splatFile: splatFile,
+                        splatRotationDegrees: 90,
+                        exportDirectory: exportDir
+                    )
                 }
             }
             
@@ -66,11 +81,11 @@ struct ImmersiveView: View {
                     edgeRadius: 0.5
                 )
                 
-                // 3️⃣ Get its true centre & radius
-                let (centre, radius) = navMeshGeometry.boundingSphere()
+                // 3️⃣ Get its true center & radius
+                let (center, radius) = navMeshGeometry.boundingSphere()
                 
-                //            // 4️⃣ Recenter so geometry’s centre → (0,0,0)
-                //            meshEntity.position = -centre
+                //            // 4️⃣ Recenter so geometry’s center → (0,0,0)
+                //            meshEntity.position = -center
                 
                 // 5️⃣ Rotate XZ → XY so “front” faces you
                 meshEntity.orientation = simd_quatf(

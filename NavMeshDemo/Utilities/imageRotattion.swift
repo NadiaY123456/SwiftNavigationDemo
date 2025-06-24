@@ -6,7 +6,7 @@ import UIKit
 
 extension UIImage {
     /// Rotates the image by the specified angle in degrees
-    func rotated(by degrees: CGFloat) -> UIImage? {
+    func rotated(degrees: CGFloat) -> UIImage? {
         let radians = degrees * .pi / 180
         
         // Calculate the size of the rotated image
@@ -41,15 +41,15 @@ extension UIImage {
     
     /// Common rotations
     func rotated90Clockwise() -> UIImage? {
-        return rotated(by: 90)
+        return rotated(degrees: 90)
     }
     
     func rotated90CounterClockwise() -> UIImage? {
-        return rotated(by: -90)
+        return rotated(degrees: -90)
     }
     
     func rotated180() -> UIImage? {
-        return rotated(by: 180)
+        return rotated(degrees: 180)
     }
     
     /// Flips the image horizontally
