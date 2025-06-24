@@ -16,6 +16,10 @@ struct ContentView: View {
 
     @AppStorage("showTerrain") private var showTerrain = true
     @AppStorage("showNavMesh") private var showNavMesh = true
+    @AppStorage("showPath") private var showPath = true
+
+    // MARK: – Path generation trigger
+    @AppStorage("pathGenerationTrigger") private var pathGenerationTrigger = 0
 
     // MARK: – Immersive-space state
 
@@ -38,17 +42,33 @@ struct ContentView: View {
             Toggle("Load Scene", isOn: $showImmersiveSpace)
                 .toggleStyle(.button)
 
-            // — NEW: Visibility Toggles —
-            HStack(spacing: 24) {
-                Toggle(isOn: $showTerrain) {
-                    Text(showTerrain ? "Hide Terrain" : "Show Terrain")
-                }
-                .toggleStyle(.button)
+            // — Visibility Toggles —
+            VStack(spacing: 16) {
+                HStack(spacing: 24) {
+                    Toggle(isOn: $showTerrain) {
+                        Text(showTerrain ? "Hide Terrain" : "Show Terrain")
+                    }
+                    .toggleStyle(.button)
 
-                Toggle(isOn: $showNavMesh) {
-                    Text(showNavMesh ? "Hide NavMesh" : "Show NavMesh")
+                    Toggle(isOn: $showNavMesh) {
+                        Text(showNavMesh ? "Hide NavMesh" : "Show NavMesh")
+                    }
+                    .toggleStyle(.button)
                 }
-                .toggleStyle(.button)
+                
+                HStack(spacing: 24) {
+                    Button("Generate Path") {
+                        // Increment trigger to signal path generation
+                        pathGenerationTrigger += 1
+                    }
+                    .disabled(!immersiveSpaceShown)
+                    
+                    Toggle(isOn: $showPath) {
+                        Text(showPath ? "Hide Path" : "Show Path")
+                    }
+                    .toggleStyle(.button)
+                    .disabled(!immersiveSpaceShown)
+                }
             }
 
             Text(diagnostic)

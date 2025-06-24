@@ -38,23 +38,25 @@ public enum FoothillDisplayOption {
 public struct SplatAreaConfig {
     public let splatName: String
     public let channelAreaCodes: [(channel: SplatMeshGenerator.Channel, areaCode: UInt8)]
-    
+
     public init(splatName: String, channelAreaCodes: [(channel: SplatMeshGenerator.Channel, areaCode: UInt8)]) {
         self.splatName = splatName
         self.channelAreaCodes = channelAreaCodes
     }
 }
 
+// MARK: - Modified version that returns NavMesh
+
 @MainActor
 public func buildFoothillNavMeshExample(
     on spaceOrigin: Entity,
     terrainFile: String,
     display: FoothillDisplayOption = .both,
-    splatFiles: [String] = ["splat_rgba"], // Now an array, defaults to single splat for backward compatibility
+    splatFiles: [String] = ["splat_rgba"],
     splatRotationDegrees: CGFloat = 90.0,
-    areaCodeConfig: [SplatAreaConfig]? = nil, // Optional area code configuration
+    areaCodeConfig: [SplatAreaConfig]? = nil,
     exportDirectory: String
-) async {
+) async -> (navMesh: NavMesh?, contentRoot: Entity?) {
     // ────────────────────────────────────────────────
     // 1️⃣ Resolve terrain source from the file-extension
     // ────────────────────────────────────────────────
@@ -81,21 +83,23 @@ public func buildFoothillNavMeshExample(
     // 2️⃣ Build NavMesh & Exports (only if requested)
     // ────────────────────────────────────────────────
     var geometry: NavMeshGeometry?
+    var navMesh: NavMesh?
+
     if showNavMesh {
         // ────────────────────────────────────────────────
         // Process splat files (if any)
         // ────────────────────────────────────────────────
         var splatDescriptors: [NavMeshGenerator.SplatDescriptor] = []
-        
+
         if !splatFiles.isEmpty {
             var currentAreaCode: UInt8 = 2 // Start auto-generation from 2
-            
+
             for (index, splatFile) in splatFiles.enumerated() {
                 guard let originalSplat = UIImage(named: splatFile) else {
                     print("❌ Failed to load splat \(splatFile) - skipping")
                     continue
                 }
-                
+
                 // Apply rotation to splat
                 let rotatedSplat: UIImage
                 switch Int(splatRotationDegrees) % 360 {
@@ -104,10 +108,10 @@ public func buildFoothillNavMeshExample(
                 case 270: rotatedSplat = originalSplat.rotated90CounterClockwise()!
                 default: rotatedSplat = originalSplat.rotated(degrees: splatRotationDegrees) ?? originalSplat
                 }
-                
+
                 // Determine channels and area codes for this splat
                 var channels: [NavMeshGenerator.SplatDescriptor.ChannelInfo] = []
-                
+
                 if let config = areaCodeConfig?.first(where: { $0.splatName == splatFile }) {
                     // Use provided area codes
                     for (channel, areaCode) in config.channelAreaCodes {
@@ -128,7 +132,7 @@ public func buildFoothillNavMeshExample(
                         currentAreaCode += 1
                     }
                 }
-                
+
                 if !channels.isEmpty {
                     let splatDesc = NavMeshGenerator.SplatDescriptor(
                         name: "\(splatFile)_splat",
@@ -144,7 +148,6 @@ public func buildFoothillNavMeshExample(
         // ────────────────────────────────────────────────
         // Build the NavMesh
         // ────────────────────────────────────────────────
-        let navMesh: NavMesh
         do {
             navMesh = try await NavMeshGenerator.makeNavMesh(
                 terrain: terrainSource,
@@ -155,13 +158,14 @@ public func buildFoothillNavMeshExample(
                 agentMaxClimb: 45.0
             )
         } catch {
-            print("❌ NavMesh generation failed: \(error)"); return
+            print("❌ NavMesh generation failed: \(error)")
+            return (nil, nil)
         }
 
         // ────────────────────────────────────────────────
         // Extract + summarise geometry
         // ────────────────────────────────────────────────
-        geometry = navMesh.extractGeometry(verbose: true)
+        geometry = navMesh!.extractGeometry(verbose: true)
         let areaCounts = Dictionary(grouping: geometry!.polygons, by: { $0.area })
             .mapValues { $0.count }
         for (area, count) in areaCounts.sorted(by: { $0.key < $1.key }) {
@@ -198,12 +202,12 @@ public func buildFoothillNavMeshExample(
         // • BIN
         let binURL = exportBaseURL.appendingPathComponent("all_tiles_navmesh.bin")
         do {
-            try navMesh.save(to: binURL)
+            try navMesh!.save(to: binURL)
             print("✅ NavMesh exported to BIN at \(binURL.path)")
         } catch {
             print("❌ Failed to export NavMesh BIN: \(error)")
         }
-        
+
         // • USDA
         let usdaURL = exportBaseURL.appendingPathComponent("navmesh.usda")
         do {
@@ -212,7 +216,7 @@ public func buildFoothillNavMeshExample(
         } catch {
             print("❌ Failed to export NavMesh USDA: \(error)")
         }
-        
+
         let usdaURLtiled = exportBaseURL.appendingPathComponent("navmesh_tiled.usda")
         do {
             try geometry!.exportToUSDATiled(filePath: usdaURLtiled.path)
@@ -220,8 +224,6 @@ public func buildFoothillNavMeshExample(
         } catch {
             print("❌ Failed to export tiled NavMesh USDA: \(error)")
         }
-
-       
     }
 
     // ────────────────────────────────────────────────
@@ -237,7 +239,6 @@ public func buildFoothillNavMeshExample(
             showEdges: shouldDrawEdges,
             showTileBounds: false
         )
-        
     }
 
     if showTerrain {
@@ -252,7 +253,7 @@ public func buildFoothillNavMeshExample(
                     repeating: redMat,
                     count: modelEntity.model?.materials.count ?? 1
                 )
-                
+
                 terrainEntity = modelEntity
                 print("✅ Terrain model added")
             } catch {
@@ -280,8 +281,9 @@ public func buildFoothillNavMeshExample(
     // ────────────────────────────────────────────────
     guard showNavMesh || showTerrain else {
         print("⚠️ No visual entities requested (display = .none) – skipping scene insertion.")
-        return
+        return (navMesh, nil)
     }
+
     // Compute bounding sphere center & radius
     let (meshCenter, meshRadius): (SIMD3<Float>, Float)
     if let geom = geometry {
@@ -319,9 +321,9 @@ public func buildFoothillNavMeshExample(
     root.position = SIMD3(0, 0, -cameraDistance)
     spaceOrigin.addChild(root)
     print("✅ buildFoothillNavMeshExample complete – displayed: \(display)")
+
+    return (navMesh, root)
 }
-
-
 
 /// Utility for building a Detour NavMesh from an OBJ or RealityKit terrain and one or more splat mask images,
 /// each with custom area codes per channel.

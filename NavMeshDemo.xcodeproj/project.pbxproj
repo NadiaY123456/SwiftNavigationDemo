@@ -27,6 +27,7 @@
 		4172BBAC2E0A47600046C176 /* plane_hill_USDZ.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 4172BBAB2E0A47600046C176 /* plane_hill_USDZ.usdz */; };
 		4172BBAE2E0A559E0046C176 /* foothillUSDZ_centered.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 4172BBAD2E0A559E0046C176 /* foothillUSDZ_centered.usdz */; };
 		4172BBB02E0A59940046C176 /* imageRotattion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4172BBAF2E0A598C0046C176 /* imageRotattion.swift */; };
+		4172BBB22E0B3FD80046C176 /* PathVisualizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4172BBB12E0B3FD70046C176 /* PathVisualizer.swift */; };
 		4182F50B2E05C9450053D065 /* SplatTester.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4182F50A2E05C93C0053D065 /* SplatTester.swift */; };
 		4182F50D2E05D6E20053D065 /* SplatMeshVisualizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4182F50C2E05D6D40053D065 /* SplatMeshVisualizer.swift */; };
 		4192045C2E05F9C800C46304 /* splat_greyscale.png in Resources */ = {isa = PBXBuildFile; fileRef = 4192045B2E05F9C800C46304 /* splat_greyscale.png */; };
@@ -72,6 +73,7 @@
 		4172BBAB2E0A47600046C176 /* plane_hill_USDZ.usdz */ = {isa = PBXFileReference; lastKnownFileType = file; path = plane_hill_USDZ.usdz; sourceTree = "<group>"; };
 		4172BBAD2E0A559E0046C176 /* foothillUSDZ_centered.usdz */ = {isa = PBXFileReference; lastKnownFileType = file; path = foothillUSDZ_centered.usdz; sourceTree = "<group>"; };
 		4172BBAF2E0A598C0046C176 /* imageRotattion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = imageRotattion.swift; sourceTree = "<group>"; };
+		4172BBB12E0B3FD70046C176 /* PathVisualizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PathVisualizer.swift; sourceTree = "<group>"; };
 		4182F50A2E05C93C0053D065 /* SplatTester.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplatTester.swift; sourceTree = "<group>"; };
 		4182F50C2E05D6D40053D065 /* SplatMeshVisualizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplatMeshVisualizer.swift; sourceTree = "<group>"; };
 		4192045B2E05F9C800C46304 /* splat_greyscale.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = splat_greyscale.png; sourceTree = "<group>"; };
@@ -136,6 +138,7 @@
 		41E36E202E053A00004C6058 /* Visualizer */ = {
 			isa = PBXGroup;
 			children = (
+				4172BBB12E0B3FD70046C176 /* PathVisualizer.swift */,
 				4182F50C2E05D6D40053D065 /* SplatMeshVisualizer.swift */,
 				41E36E212E053A14004C6058 /* NavMeshVisualizer.swift */,
 			);
@@ -356,6 +359,7 @@
 				4172BB9E2E088B4E0046C176 /* NavMeshGenerator.swift in Sources */,
 				414DBD222E030B8700B3A142 /* GeometryTester.swift in Sources */,
 				4901C67C2AB4F8A600FBDBF4 /* FakeRandom.swift in Sources */,
+				4172BBB22E0B3FD80046C176 /* PathVisualizer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

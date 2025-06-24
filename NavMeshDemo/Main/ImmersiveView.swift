@@ -24,28 +24,40 @@ struct ImmersiveView: View {
     // Shared settings coming from the plackard
     @AppStorage("showTerrain") private var showTerrain = true
     @AppStorage("showNavMesh") private var showNavMesh = true
+    @AppStorage("showPath") private var showPath = true
+    @AppStorage("pathGenerationTrigger") private var pathGenerationTrigger = 0
 
     // Cached scene pieces
-    @State private var container      = Entity()   // holds everything we build
-    @State private var contentRoot: Entity?        // the inner root returned by the builder
+    @State private var container = Entity() // holds everything we build
+    @State private var contentRoot: Entity? // the inner root returned by the builder
     @State private var navMeshEntity: Entity?
     @State private var terrainEntity: Entity?
-    @State private var sceneBuilt     = false
+    @State private var pathEntity: Entity?
+    @State private var sceneBuilt = false
+
+    // NavMesh query components
+    @State private var navMesh: NavMesh?
+    @State private var navQuery: NavMeshQuery?
 
     var body: some View {
         RealityView { content in
             content.add(spaceOrigin)
         }
-        .task {                                             // build once
+        .task { // build once
             guard !sceneBuilt else { return }
             await buildSceneOnce()
             updateVisibility()
         }
         .onChange(of: showTerrain) { _, _ in updateVisibility() }
         .onChange(of: showNavMesh) { _, _ in updateVisibility() }
+        .onChange(of: showPath) { _, _ in updateVisibility() }
+        .onChange(of: pathGenerationTrigger) { _, _ in
+            Task { await generateRandomPath() }
+        }
     }
 
     // MARK: – Build only once
+
     @MainActor
     private func buildSceneOnce() async {
         // Attach an empty container to world origin
@@ -53,87 +65,180 @@ struct ImmersiveView: View {
 
         // Build *both* visuals so scale/camera are correct,
         // even if the user immediately hides one of them.
-        
-        let splatFiles = ["splat_rgba"]
-//        let splatFiles: [String] = []
-        let terrainFileUSDZ = "foothillUSDZ_centered.usdz"
-//      let terrainFileUSDZ = "plane.usdz"
 
-//      let terrainFileObj = "/Users/nata/GitHub/Practicing/SwiftNavigationDemo/NavMeshDemo/Data/plane.obj"
+        let splatFiles = ["splat_rgba"]
+        //        let splatFiles: [String] = []
+        let terrainFileUSDZ = "foothillUSDZ_centered.usdz"
+        //      let terrainFileUSDZ = "plane.usdz"
+
+        //      let terrainFileObj = "/Users/nata/GitHub/Practicing/SwiftNavigationDemo/NavMeshDemo/Data/plane.obj"
         let exportDir = "/Users/nata/Library/CloudStorage/OneDrive-Personal/CNC/VisionPro/World/"
-        
-        await buildFoothillNavMeshExample(
+
+        // Store the NavMesh for path queries
+        let (navMeshResult, contentRootResult) = await buildFoothillNavMeshExample(
             on: container,
             terrainFile: terrainFileUSDZ,
-            display: .both,                         // <— always both, unless debugging
+            display: .both,
             splatFiles: splatFiles,
             splatRotationDegrees: 90,
             exportDirectory: exportDir
         )
-        
-        
-        // MARK: - Example Usage
 
-        /*
-        // Example 1: No splats (generates navmesh without custom areas)
-        await buildFoothillNavMeshExample(
-            on: container,
-            terrainFile: "foothill",
-            display: .both,
-            splatFiles: [],  // Empty array - no custom areas
-            exportDirectory: "/path/to/export"
-        )
-
-        // Example 2: Single splat with default area codes (auto-generated starting from 2)
-        await buildFoothillNavMeshExample(
-            on: container,
-            terrainFile: "foothill",
-            display: .both,
-            splatFiles: ["splat_rgba"],
-            splatRotationDegrees: 90.0,
-            exportDirectory: "/path/to/export"
-        )
-
-        // Example 3: Multiple splats with custom area codes
-        let areaConfig = [
-            SplatAreaConfig(
-                splatName: "roads_splat",
-                channelAreaCodes: [
-                    (.red, 2),    // Roads
-                    (.green, 3)   // Sidewalks
-                ]
-            ),
-            SplatAreaConfig(
-                splatName: "water_splat",
-                channelAreaCodes: [
-                    (.blue, 4)    // Water bodies
-                ]
-            )
-        ]
-
-        await buildFoothillNavMeshExample(
-            on: container,
-            terrainFile: "foothill",
-            display: .both,
-            splatFiles: ["roads_splat", "water_splat"],
-            splatRotationDegrees: 0.0,
-            areaCodeConfig: areaConfig,
-            exportDirectory: "/path/to/export"
-        )
-        */
+        if let mesh = navMeshResult {
+            navMesh = mesh
+            // Create query for pathfinding
+            do {
+                navQuery = try mesh.makeQuery()
+                print("✅ NavMeshQuery created successfully")
+            } catch {
+                print("❌ Failed to create NavMeshQuery: \(error)")
+            }
+        }
 
         // The builder added its own root under `container`.
         guard let root = container.children.first else { return }
         contentRoot = root
 
         // The small patch below (see NavMeshGenerator.swift) gives us names.
-        navMeshEntity  = root.findEntity(named: "NavMesh")
-        terrainEntity  = root.findEntity(named: "Terrain")
+        navMeshEntity = root.findEntity(named: "NavMesh")
+        terrainEntity = root.findEntity(named: "Terrain")
 
         sceneBuilt = true
     }
 
+    // MARK: - Example Usage
+
+    /*
+     // Example 1: No splats (generates navmesh without custom areas)
+     await buildFoothillNavMeshExample(
+         on: container,
+         terrainFile: "foothill",
+         display: .both,
+         splatFiles: [],  // Empty array - no custom areas
+         exportDirectory: "/path/to/export"
+     )
+
+     // Example 2: Single splat with default area codes (auto-generated starting from 2)
+     await buildFoothillNavMeshExample(
+         on: container,
+         terrainFile: "foothill",
+         display: .both,
+         splatFiles: ["splat_rgba"],
+         splatRotationDegrees: 90.0,
+         exportDirectory: "/path/to/export"
+     )
+
+     // Example 3: Multiple splats with custom area codes
+     let areaConfig = [
+         SplatAreaConfig(
+             splatName: "roads_splat",
+             channelAreaCodes: [
+                 (.red, 2),    // Roads
+                 (.green, 3)   // Sidewalks
+             ]
+         ),
+         SplatAreaConfig(
+             splatName: "water_splat",
+             channelAreaCodes: [
+                 (.blue, 4)    // Water bodies
+             ]
+         )
+     ]
+
+     await buildFoothillNavMeshExample(
+         on: container,
+         terrainFile: "foothill",
+         display: .both,
+         splatFiles: ["roads_splat", "water_splat"],
+         splatRotationDegrees: 0.0,
+         areaCodeConfig: areaConfig,
+         exportDirectory: "/path/to/export"
+     )
+     */
+
     // MARK: – Toggle visibility without regenerating
+
+    // MARK: – Path Generation
+
+    @MainActor
+    private func generateRandomPath() async {
+        guard let query = navQuery else {
+            print("❌ No NavMeshQuery available")
+            return
+        }
+
+        // Remove existing path
+        pathEntity?.removeFromParent()
+        pathEntity = nil
+
+        do {
+            // Find random start and end points
+            let start = try query.findRandomPoint().get()
+            let end = try query.findRandomPoint().get()
+
+            print("🎯 Generating path from \(start.point3) to \(end.point3)")
+
+            // Find path corridor
+            let corridor = try query.findPathCorridor(start: start, end: end).get()
+
+            // Find straight path
+            let options: NavMeshQuery.StraightPathOptions = [.allCrossings]
+            let foundPath = try query.findStraightPath(
+                startPos: start.point3,
+                endPos: end.point3,
+                pathCorridor: corridor,
+                options: options
+            ).get()
+
+            print("✅ Found path with \(foundPath.count) waypoints")
+
+            // Create visual representation
+            let newPathEntity = foundPath.makePathEntity(
+                lineColor: .systemGreen,
+                lineRadius: 1,
+                waypointRadius: 2.4,
+                showWaypoints: true
+            )
+            newPathEntity.name = "GeneratedPath"
+
+            // Apply same transform as other entities
+            if let root = contentRoot {
+                newPathEntity.position = -getContentCenter()
+                let offsetTowardsCamera: Float = 1
+                // …then bump out along world Z so it renders in front of the navmesh
+                newPathEntity.position.z += offsetTowardsCamera
+                newPathEntity.orientation = simd_quatf(angle: .pi / 2, axis: SIMD3(1, 0, 0))
+                root.addChild(newPathEntity)
+                pathEntity = newPathEntity
+
+                // Update visibility
+                updateVisibility()
+            }
+
+        } catch {
+            print("❌ Path generation failed: \(error)")
+        }
+    }
+
+    // MARK: – Helper to get content center
+
+    @MainActor
+    private func getContentCenter() -> SIMD3<Float> {
+        // Compute everything in the same local space we parent the path into
+        guard let root = contentRoot else { return .zero }
+
+        if let nav = navMeshEntity {
+            let bounds = nav.visualBounds(relativeTo: root)
+            return bounds.center
+        } else if let terr = terrainEntity {
+            let bounds = terr.visualBounds(relativeTo: root)
+            return bounds.center
+        }
+        return .zero
+    }
+
+    // MARK: – Toggle visibility without regenerating
+
     @MainActor
     private func updateVisibility() {
         guard let root = contentRoot else { return }
@@ -149,10 +254,17 @@ struct ImmersiveView: View {
         } else {
             navMeshEntity?.removeFromParent()
         }
+
+        if showPath {
+            if let path = pathEntity, path.parent == nil { root.addChild(path) }
+        } else {
+            pathEntity?.removeFromParent()
+        }
     }
 }
 
 // MARK: – Tiny helper to search recursively by name
+
 private extension Entity {
     func findEntity(named target: String) -> Entity? {
         if name == target { return self }
@@ -162,8 +274,6 @@ private extension Entity {
         return nil
     }
 }
-
-
 
 #if false
 let testNameMeshGeometryBool = false
