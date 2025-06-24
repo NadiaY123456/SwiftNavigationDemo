@@ -25,6 +25,8 @@
 		4172BBA62E09CE1A0046C176 /* CustomConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4172BBA52E09CE120046C176 /* CustomConfig.swift */; };
 		4172BBA82E0A44F30046C176 /* plane_hill.obj in Resources */ = {isa = PBXBuildFile; fileRef = 4172BBA72E0A44F30046C176 /* plane_hill.obj */; };
 		4172BBAC2E0A47600046C176 /* plane_hill_USDZ.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 4172BBAB2E0A47600046C176 /* plane_hill_USDZ.usdz */; };
+		4172BBAE2E0A559E0046C176 /* foothillUSDZ_centered.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 4172BBAD2E0A559E0046C176 /* foothillUSDZ_centered.usdz */; };
+		4172BBB02E0A59940046C176 /* imageRotattion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4172BBAF2E0A598C0046C176 /* imageRotattion.swift */; };
 		4182F50B2E05C9450053D065 /* SplatTester.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4182F50A2E05C93C0053D065 /* SplatTester.swift */; };
 		4182F50D2E05D6E20053D065 /* SplatMeshVisualizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4182F50C2E05D6D40053D065 /* SplatMeshVisualizer.swift */; };
 		4192045C2E05F9C800C46304 /* splat_greyscale.png in Resources */ = {isa = PBXBuildFile; fileRef = 4192045B2E05F9C800C46304 /* splat_greyscale.png */; };
@@ -69,6 +71,8 @@
 		4172BBA52E09CE120046C176 /* CustomConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomConfig.swift; sourceTree = "<group>"; };
 		4172BBA72E0A44F30046C176 /* plane_hill.obj */ = {isa = PBXFileReference; lastKnownFileType = text; path = plane_hill.obj; sourceTree = "<group>"; };
 		4172BBAB2E0A47600046C176 /* plane_hill_USDZ.usdz */ = {isa = PBXFileReference; lastKnownFileType = file; path = plane_hill_USDZ.usdz; sourceTree = "<group>"; };
+		4172BBAD2E0A559E0046C176 /* foothillUSDZ_centered.usdz */ = {isa = PBXFileReference; lastKnownFileType = file; path = foothillUSDZ_centered.usdz; sourceTree = "<group>"; };
+		4172BBAF2E0A598C0046C176 /* imageRotattion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = imageRotattion.swift; sourceTree = "<group>"; };
 		4182F50A2E05C93C0053D065 /* SplatTester.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplatTester.swift; sourceTree = "<group>"; };
 		4182F50C2E05D6D40053D065 /* SplatMeshVisualizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplatMeshVisualizer.swift; sourceTree = "<group>"; };
 		4192045B2E05F9C800C46304 /* splat_greyscale.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = splat_greyscale.png; sourceTree = "<group>"; };
@@ -202,6 +206,7 @@
 		4901C6782AB4F84A00FBDBF4 /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
+				4172BBAF2E0A598C0046C176 /* imageRotattion.swift */,
 				4901C6792AB4F86000FBDBF4 /* MeshLoader.swift */,
 				4901C67B2AB4F8A600FBDBF4 /* FakeRandom.swift */,
 			);
@@ -231,6 +236,7 @@
 				4172BB9B2E084D8A0046C176 /* foothill.obj */,
 				41E36E192E0536C3004C6058 /* plane.obj */,
 				4901C67E2AB4F9E500FBDBF4 /* dungeon.obj */,
+				4172BBAD2E0A559E0046C176 /* foothillUSDZ_centered.usdz */,
 				4901C67F2AB4F9E500FBDBF4 /* nav_test.obj */,
 				4901C6802AB4F9E500FBDBF4 /* undulating.obj */,
 				4192045B2E05F9C800C46304 /* splat_greyscale.png */,
@@ -306,6 +312,7 @@
 				414DBD262E032EAC00B3A142 /* plane.bin in Resources */,
 				414DBD282E03362A00B3A142 /* plane.usdz in Resources */,
 				41E36E1A2E0536C3004C6058 /* plane.obj in Resources */,
+				4172BBAE2E0A559E0046C176 /* foothillUSDZ_centered.usdz in Resources */,
 				41E36E252E0541D1004C6058 /* planeLarge.obj in Resources */,
 				4901C6812AB4F9E500FBDBF4 /* dungeon.obj in Resources */,
 				4172BBAC2E0A47600046C176 /* plane_hill_USDZ.usdz in Resources */,
@@ -348,6 +355,7 @@
 				41E36E222E053A14004C6058 /* NavMeshVisualizer.swift in Sources */,
 				4182F50D2E05D6E20053D065 /* SplatMeshVisualizer.swift in Sources */,
 				41E36E1C2E0536FD004C6058 /* CustomAreaTester.swift in Sources */,
+				4172BBB02E0A59940046C176 /* imageRotattion.swift in Sources */,
 				4901C66C2AB4F65F00FBDBF4 /* ImmersiveView.swift in Sources */,
 				4172BB9E2E088B4E0046C176 /* NavMeshGenerator.swift in Sources */,
 				414DBD222E030B8700B3A142 /* GeometryTester.swift in Sources */,

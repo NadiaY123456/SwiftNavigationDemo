@@ -8,41 +8,37 @@ import UIKit
 /// Example function to build a NavMesh for the “foothill” model and visualize it under a given scene origin.
 @MainActor
 public func buildFoothillNavMeshExample(on spaceOrigin: Entity) async {
-    // 1️⃣ Define the terrain source (RealityKit model "foothill" in the bundle's Data folder)
-    // from usdz
-    let terrainName = "foothillUSDZ"
-//    let terrainName = "foothillUSDZ"
+    // 1️⃣ Define the terrain source WITHOUT rotation
+    let terrainName = "foothillUSDZ_centered"
     let terrainSource = NavMeshGenerator.TerrainSource.model(
         name: terrainName,
-        rotation: simd_quatf(angle: .pi / 2, axis: [0, 1, 0])
+        rotation: simd_quatf(real: 1.0, imag: SIMD3<Float>(0.0, 0.0, 0.0)) // Identity rotation - no rotation!
     )
     print("Using terrain: \(terrainName)")
 
-//    // from obj
-//    let file = "plane.obj"
-    ////    let file = "splatRed.obj"
-//    let objPath = "/Users/nata/GitHub/Practicing/SwiftNavigationDemo/NavMeshDemo/Data/\(file)"
-//    let terrainSource = NavMeshGenerator.TerrainSource.obj(
-//        path: objPath,
-//        scale: 1.0
-//    )
-
-    // 2️⃣ Load splat image (if using splats)
+    // 2️⃣ Load and rotate the splat image to match terrain orientation
     let imageName = "splat_rgba"
-    guard let splat = UIImage(named: imageName) else {
-        print("❌ Failed to load image “\(imageName)”")
+    guard let originalSplat = UIImage(named: imageName) else {
+        print("❌ Failed to load image \(imageName)")
         return
     }
+    
+    // Rotate the splat image 90 degrees counter-clockwise to match terrain
+    guard let rotatedSplat = originalSplat.rotated90Clockwise() else {
+        print("❌ Failed to rotate splat image")
+        return
+    }
+    
     // Example channels (green = road, blue = water)
     let roadChannel = NavMeshGenerator.SplatDescriptor.ChannelInfo(channel: .green, areaCode: 2)
     let waterChannel = NavMeshGenerator.SplatDescriptor.ChannelInfo(channel: .blue, areaCode: 3)
     let splatDesc = NavMeshGenerator.SplatDescriptor(
         name: "foothillSplat",
-        image: splat,
+        image: rotatedSplat, // Use the rotated image
         channels: [waterChannel, roadChannel]
     )
 
-    // 3️⃣ Build the NavMesh (no splats = just terrain navmesh)
+    // 3️⃣ Build the NavMesh
     let navMesh: NavMesh
     do {
         navMesh = try await NavMeshGenerator.makeNavMesh(
@@ -70,7 +66,7 @@ public func buildFoothillNavMeshExample(on spaceOrigin: Entity) async {
         print("Area code \(area): \(count) polygons")
     }
 
-    //  Export NavMesh as OBJ
+    // Export NavMesh as OBJ
     let exportPath = "/Users/nata/Library/CloudStorage/OneDrive-Personal/CNC/VisionPro/World/swiftNavMesh.obj"
     let exportURL = URL(fileURLWithPath: exportPath)
 
@@ -100,35 +96,16 @@ public func buildFoothillNavMeshExample(on spaceOrigin: Entity) async {
     } catch {
         print("❌ Failed to export NavMesh OBJ: \(error)")
     }
+    
     // 5️⃣ Create visualizer entity
     let navEntity = geometry.makeNavMeshEntity(
         showEdges: true
     )
 
-    // 6️⃣ Position & scale
-//    let scale: Float = 0.1
-//    let height: Float = -0
-//    let zDistance: Float = -100
-//    navEntity.position.y += height
-//    navEntity.position.z += zDistance
-//    navEntity.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0])
-//    navEntity.scale = SIMD3<Float>(scale, scale, scale)
-
-    // 7️⃣ Add to scene origin
+    // 6️⃣ Add to scene origin
     spaceOrigin.addChild(navEntity)
     print("✅ NavMesh visualized under spaceOrigin")
-
-//    // 8️⃣ (Optional) Load and add the USDZ terrain model
-//    do {
-//        let modelEntity = try await ModelEntity(named: "foothill", in: .main)
-//        modelEntity.scale = .one
-//        spaceOrigin.addChild(modelEntity)
-//        print("✅ Terrain model added")
-//    } catch {
-//        print("⚠️ Failed to load terrain model: \(error)")
-//    }
 }
-
 /// Utility for building a Detour NavMesh from an OBJ or RealityKit terrain and one or more splat mask images,
 /// each with custom area codes per channel.
 public enum NavMeshGenerator {
