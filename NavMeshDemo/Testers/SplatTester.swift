@@ -91,7 +91,7 @@ func generateSplatModel(
         // 0️⃣ Load the terrain model -------------------------------------------------
         let myModelEntity: ModelEntity
         do {
-            myModelEntity = try await ModelEntity(named: "foothillUSDZ")
+            myModelEntity = try await ModelEntity(named: "terrainName")
             myModelEntity.scale = [1, 1, 1]
             print("Loaded model at pos \(myModelEntity.position), scale \(myModelEntity.scale)")
 

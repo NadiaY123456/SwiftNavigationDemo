@@ -4,10 +4,12 @@
 import SwiftNavigation
 
 // Example usage:
-let customNavMeshConfig = makeNavMeshConfig(
-    agentRadius: 0.6,
-    cellSize: 0.3, //nil for autocalculate at agentRadius/3. set to agentRadius/2 if fails
-    tileSizeUnits: 25 //nil for autocalculate at 256 * cellSize
+public let customNavMeshConfig = makeNavMeshConfig(
+    agentRadius: 0.4,
+    cellSize: 0.2, // nil for autocalculate at agentRadius/3. set to agentRadius/2 if fails
+    tileSizeUnits: 25, // nil for autocalculate at 256 * cellSize
+    minRegionArea: 8,   // Smaller to preserve small road sections
+    mergeRegionArea: 20 // Smaller to avoid merging road with ground
 )
 
 // MARK: - Factory for unit-based configuration
@@ -22,13 +24,19 @@ let customNavMeshConfig = makeNavMeshConfig(
 ///   - walkableHeightUnits: Optional min floor-ceiling height in world units.
 ///   - walkableClimbUnits: Optional max climb height in world units.
 ///   - maxEdgeLenUnits: Optional max contour edge length in world units.
-func makeNavMeshConfig(agentRadius: Float,
-                         cellSize: Float? = nil,
-                         tileSizeUnits: Float? = nil,
-                         walkableRadiusUnits: Float? = nil,
-                         walkableHeightUnits: Float? = nil,
-                         walkableClimbUnits: Float? = nil,
-                         maxEdgeLenUnits: Float? = nil) -> NavMeshConfig {
+///   - minRegionArea: Optional minimum region span count. Smaller values preserve small regions (e.g., narrow roads). Defaults to 8.
+///   - mergeRegionArea: Optional span threshold below which regions are merged. Smaller values avoid merging narrow features with ground. Defaults to 20.
+public func makeNavMeshConfig(
+    agentRadius: Float,
+    cellSize: Float? = nil,
+    tileSizeUnits: Float? = nil,
+    walkableRadiusUnits: Float? = nil,
+    walkableHeightUnits: Float? = nil,
+    walkableClimbUnits: Float? = nil,
+    maxEdgeLenUnits: Float? = nil,
+    minRegionArea: Int32? = nil,
+    mergeRegionArea: Int32? = nil
+) -> NavMeshConfig {
     var config = NavMeshConfig()
     // Agent
     config.agentRadius = agentRadius
@@ -56,5 +64,12 @@ func makeNavMeshConfig(agentRadius: Float,
     if let melUnits = maxEdgeLenUnits {
         config.maxEdgeLen = Int32(melUnits / cs)
     }
+    // Region settings (span counts)
+    // For custom areas, consider these settings:
+    let mra = minRegionArea ?? 8  // Smaller to preserve small road sections
+    config.minRegionArea = mra
+    let mgra = mergeRegionArea ?? 20  // Smaller to avoid merging road with ground
+    config.mergeRegionArea = mgra
+
     return config
 }

@@ -23,6 +23,8 @@
 		4172BBA22E08D8D50046C176 /* splatBlue.obj in Resources */ = {isa = PBXBuildFile; fileRef = 4172BBA12E08D8D50046C176 /* splatBlue.obj */; };
 		4172BBA42E08FDEB0046C176 /* splatRed.obj in Resources */ = {isa = PBXBuildFile; fileRef = 4172BBA32E08FDEB0046C176 /* splatRed.obj */; };
 		4172BBA62E09CE1A0046C176 /* CustomConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4172BBA52E09CE120046C176 /* CustomConfig.swift */; };
+		4172BBA82E0A44F30046C176 /* plane_hill.obj in Resources */ = {isa = PBXBuildFile; fileRef = 4172BBA72E0A44F30046C176 /* plane_hill.obj */; };
+		4172BBAC2E0A47600046C176 /* plane_hill_USDZ.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 4172BBAB2E0A47600046C176 /* plane_hill_USDZ.usdz */; };
 		4182F50B2E05C9450053D065 /* SplatTester.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4182F50A2E05C93C0053D065 /* SplatTester.swift */; };
 		4182F50D2E05D6E20053D065 /* SplatMeshVisualizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4182F50C2E05D6D40053D065 /* SplatMeshVisualizer.swift */; };
 		4192045C2E05F9C800C46304 /* splat_greyscale.png in Resources */ = {isa = PBXBuildFile; fileRef = 4192045B2E05F9C800C46304 /* splat_greyscale.png */; };
@@ -65,6 +67,8 @@
 		4172BBA12E08D8D50046C176 /* splatBlue.obj */ = {isa = PBXFileReference; lastKnownFileType = text; path = splatBlue.obj; sourceTree = "<group>"; };
 		4172BBA32E08FDEB0046C176 /* splatRed.obj */ = {isa = PBXFileReference; lastKnownFileType = text; path = splatRed.obj; sourceTree = "<group>"; };
 		4172BBA52E09CE120046C176 /* CustomConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomConfig.swift; sourceTree = "<group>"; };
+		4172BBA72E0A44F30046C176 /* plane_hill.obj */ = {isa = PBXFileReference; lastKnownFileType = text; path = plane_hill.obj; sourceTree = "<group>"; };
+		4172BBAB2E0A47600046C176 /* plane_hill_USDZ.usdz */ = {isa = PBXFileReference; lastKnownFileType = file; path = plane_hill_USDZ.usdz; sourceTree = "<group>"; };
 		4182F50A2E05C93C0053D065 /* SplatTester.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplatTester.swift; sourceTree = "<group>"; };
 		4182F50C2E05D6D40053D065 /* SplatMeshVisualizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplatMeshVisualizer.swift; sourceTree = "<group>"; };
 		4192045B2E05F9C800C46304 /* splat_greyscale.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = splat_greyscale.png; sourceTree = "<group>"; };
@@ -211,7 +215,9 @@
 				4172BBA32E08FDEB0046C176 /* splatRed.obj */,
 				4192045D2E05FD1400C46304 /* splat_greyscale_4m.png */,
 				4172BB942E076FC60046C176 /* splat_rgba.png */,
+				4172BBAB2E0A47600046C176 /* plane_hill_USDZ.usdz */,
 				4172BBA12E08D8D50046C176 /* splatBlue.obj */,
+				4172BBA72E0A44F30046C176 /* plane_hill.obj */,
 				41E36E242E0541D1004C6058 /* planeLarge.obj */,
 				4192045F2E05FE0500C46304 /* splat_rgba_small.png */,
 				414DBD272E03362A00B3A142 /* plane.usdz */,
@@ -302,8 +308,10 @@
 				41E36E1A2E0536C3004C6058 /* plane.obj in Resources */,
 				41E36E252E0541D1004C6058 /* planeLarge.obj in Resources */,
 				4901C6812AB4F9E500FBDBF4 /* dungeon.obj in Resources */,
+				4172BBAC2E0A47600046C176 /* plane_hill_USDZ.usdz in Resources */,
 				4172BB9C2E084D8A0046C176 /* foothill.obj in Resources */,
 				4192045C2E05F9C800C46304 /* splat_greyscale.png in Resources */,
+				4172BBA82E0A44F30046C176 /* plane_hill.obj in Resources */,
 				4901C6832AB4F9E500FBDBF4 /* undulating.obj in Resources */,
 				419204602E05FE0500C46304 /* splat_rgba_small.png in Resources */,
 				4163C9402E00A160001CA143 /* navmesh_12byte.bin in Resources */,

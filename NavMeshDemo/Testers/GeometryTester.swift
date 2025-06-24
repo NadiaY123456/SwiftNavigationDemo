@@ -13,6 +13,7 @@ import SwiftNavigation
 func testGeometry(selectedMesh: String) throws -> NavMeshGeometry? {
     #if false
     // Load mesh in bin format
+    selectedMesh = "swiftNavMeshGeometryTester"
     guard let url = Bundle.main.url(forResource: selectedMesh, withExtension: "bin")
     else {
         print("❌ Could not find \(selectedMesh).bin")
@@ -34,7 +35,7 @@ func testGeometry(selectedMesh: String) throws -> NavMeshGeometry? {
     }
     #endif
     
-    #if false
+    #if true
     // Load mesh in obj format
     let navMeshGeometry: NavMeshGeometry
     do {
@@ -54,7 +55,7 @@ func testGeometry(selectedMesh: String) throws -> NavMeshGeometry? {
     }
     #endif
     
-#if true
+    #if false
     // create mesh
     let navMeshGeometry: NavMeshGeometry
     do {
