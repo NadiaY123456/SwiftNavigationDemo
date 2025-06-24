@@ -5,15 +5,12 @@ import UIKit
 
 // MARK: - Example Visualization
 
-/// Example function to build a NavMesh for the “foothill” model and visualize it under a given scene origin.
+/// Example function to build a NavMesh for the "foothill" model and visualize it under a given scene origin.
 @MainActor
 public func buildFoothillNavMeshExample(on spaceOrigin: Entity) async {
-    // 1️⃣ Define the terrain source WITHOUT rotation
+    // 1️⃣ Define the terrain source
     let terrainName = "foothillUSDZ_centered"
-    let terrainSource = NavMeshGenerator.TerrainSource.model(
-        name: terrainName,
-        rotation: simd_quatf(real: 1.0, imag: SIMD3<Float>(0.0, 0.0, 0.0)) // Identity rotation - no rotation!
-    )
+    let terrainSource = NavMeshGenerator.TerrainSource.model(name: terrainName)
     print("Using terrain: \(terrainName)")
 
     // 2️⃣ Load and rotate the splat image to match terrain orientation
@@ -22,13 +19,13 @@ public func buildFoothillNavMeshExample(on spaceOrigin: Entity) async {
         print("❌ Failed to load image \(imageName)")
         return
     }
-    
+
     // Rotate the splat image 90 degrees counter-clockwise to match terrain
     guard let rotatedSplat = originalSplat.rotated90Clockwise() else {
         print("❌ Failed to rotate splat image")
         return
     }
-    
+
     // Example channels (green = road, blue = water)
     let roadChannel = NavMeshGenerator.SplatDescriptor.ChannelInfo(channel: .green, areaCode: 2)
     let waterChannel = NavMeshGenerator.SplatDescriptor.ChannelInfo(channel: .blue, areaCode: 3)
@@ -96,16 +93,22 @@ public func buildFoothillNavMeshExample(on spaceOrigin: Entity) async {
     } catch {
         print("❌ Failed to export NavMesh OBJ: \(error)")
     }
-    
-    // 5️⃣ Create visualizer entity
-    let navEntity = geometry.makeNavMeshEntity(
-        showEdges: true
+
+    // Decide whether to draw edges based on polygon count
+    let shouldDrawEdges = geometry.polygons.count < 1_000 // tweak to taste
+
+    // 5️⃣ Create visualiser entity
+    let navEntity = geometry.makeOptimizedNavMeshEntity(
+        polygonThreshold: 500, // tile/area batching threshold
+        showEdges: shouldDrawEdges, //
+        showTileBounds: false
     )
 
     // 6️⃣ Add to scene origin
     spaceOrigin.addChild(navEntity)
     print("✅ NavMesh visualized under spaceOrigin")
 }
+
 /// Utility for building a Detour NavMesh from an OBJ or RealityKit terrain and one or more splat mask images,
 /// each with custom area codes per channel.
 public enum NavMeshGenerator {
@@ -134,11 +137,10 @@ public enum NavMeshGenerator {
     public enum TerrainSource {
         /// Load from OBJ file path, with optional uniform scale.
         case obj(path: String, scale: Float = 1.0)
-        /// Load from a RealityKit asset name, applying rotation when sampling heights.
-        case model(name: String, rotation: simd_quatf = simd_quatf(angle: .pi / 2, axis: [0, 1, 0]))
+        /// Load from a RealityKit asset name.
+        case model(name: String)
     }
 
-    
     /// Builds a NavMesh by projecting each splat channel onto the terrain and marking areas accordingly.
     public static func makeNavMesh(
         terrain: TerrainSource,
@@ -148,7 +150,7 @@ public enum NavMeshGenerator {
         threshold: Float? = 0.1,
         invertMask: Bool? = false,
         morphologyRadius: Int = 0,
-        interiorSpacingFactor: CGFloat = 1000,
+        interiorSpacingFactor: CGFloat = 1_000,
         config: NavMeshConfig,
         agentHeight: Float,
         agentRadius: Float,
@@ -158,7 +160,6 @@ public enum NavMeshGenerator {
         let mainVertices: [SIMD3<Float>]
         let mainTriangles: [Int32]
         var loadedTerrainEntity: ModelEntity? = nil
-        var terrainRotation: simd_quatf? = nil
         let mainMeshLoader: MeshLoader
         let terrainDesc: String
 
@@ -169,10 +170,9 @@ public enum NavMeshGenerator {
             mainVertices = loader.vertices
             mainTriangles = loader.triangles
             mainMeshLoader = loader
-        case .model(let name, let rotation):
+        case .model(let name):
             terrainDesc = "Model(\"\(name)\")"
 
-            terrainRotation = rotation
             let entity = try await ModelEntity(named: name, in: .main)
             loadedTerrainEntity = entity
             guard let modelComponent = await entity.model else {
@@ -239,18 +239,17 @@ public enum NavMeshGenerator {
                     channelLoader = try MeshLoader(
                         splatMesh2D: mesh2D,
                         terrainOBJPath: path,
-                        terrainScale: scale
+                        terrainScale: scale,
+                        debugPrint: true
                     )
                 case .model:
-                    guard let entity = loadedTerrainEntity,
-                          let rotation = terrainRotation
-                    else {
+                    guard let entity = loadedTerrainEntity else {
                         fatalError("Terrain entity not loaded for .model projection")
                     }
                     channelLoader = MeshLoader(
                         splatMesh2D: mesh2D,
                         terrainModel: entity,
-                        terrainRotation: rotation
+                        debugPrint: true
                     )
                 }
                 print(
@@ -295,10 +294,10 @@ public enum NavMeshGenerator {
                 vertices: mainVertices,
                 triangles: mainTriangles,
                 config: config,
-                areas: []  // Empty for bounds calculation
+                areas: [] // Empty for bounds calculation
             )
             testBuilder.debugAreaDefinitions(areaDefinitions)
-            
+
             builder = try NavMeshBuilder(
                 vertices: mainVertices,
                 triangles: mainTriangles,

@@ -101,7 +101,7 @@ func generateSplatModel(
         }
 
         // 1️⃣ Convert 2-D → 3-D using ObjMeshLoader ---------------------------------
-        let meshLoader = MeshLoader(splatMesh2D: mesh2D, terrainModel: myModelEntity, terrainRotation: terrainRotation)
+        let meshLoader = MeshLoader(splatMesh2D: mesh2D, terrainModel: myModelEntity)
 
         // 2️⃣ (Optional) write the OBJ to disk --------------------------------------
         let outURL = URL(fileURLWithPath:
