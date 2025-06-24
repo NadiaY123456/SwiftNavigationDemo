@@ -53,15 +53,74 @@ struct ImmersiveView: View {
 
         // Build *both* visuals so scale/camera are correct,
         // even if the user immediately hides one of them.
+        
+        let splatFiles = ["splat_rgba"]
+//        let splatFiles: [String] = []
+        let terrainFileUSDZ = "foothillUSDZ_centered.usdz"
+//      let terrainFileUSDZ = "plane.usdz"
+
+//      let terrainFileObj = "/Users/nata/GitHub/Practicing/SwiftNavigationDemo/NavMeshDemo/Data/plane.obj"
+        let exportDir = "/Users/nata/Library/CloudStorage/OneDrive-Personal/CNC/VisionPro/World/"
+        
         await buildFoothillNavMeshExample(
             on: container,
-            terrainFile: "plane.usdz", //"foothillUSDZ_centered.usdz",
-            display: .both,                         // <— always both
-            splatFile: "splat_rgba",
+            terrainFile: terrainFileUSDZ,
+            display: .both,                         // <— always both, unless debugging
+            splatFiles: splatFiles,
             splatRotationDegrees: 90,
-            exportDirectory: "/Users/nata/Library/CloudStorage/"
-                             + "OneDrive-Personal/CNC/VisionPro/World/"
+            exportDirectory: exportDir
         )
+        
+        
+        // MARK: - Example Usage
+
+        /*
+        // Example 1: No splats (generates navmesh without custom areas)
+        await buildFoothillNavMeshExample(
+            on: container,
+            terrainFile: "foothill",
+            display: .both,
+            splatFiles: [],  // Empty array - no custom areas
+            exportDirectory: "/path/to/export"
+        )
+
+        // Example 2: Single splat with default area codes (auto-generated starting from 2)
+        await buildFoothillNavMeshExample(
+            on: container,
+            terrainFile: "foothill",
+            display: .both,
+            splatFiles: ["splat_rgba"],
+            splatRotationDegrees: 90.0,
+            exportDirectory: "/path/to/export"
+        )
+
+        // Example 3: Multiple splats with custom area codes
+        let areaConfig = [
+            SplatAreaConfig(
+                splatName: "roads_splat",
+                channelAreaCodes: [
+                    (.red, 2),    // Roads
+                    (.green, 3)   // Sidewalks
+                ]
+            ),
+            SplatAreaConfig(
+                splatName: "water_splat",
+                channelAreaCodes: [
+                    (.blue, 4)    // Water bodies
+                ]
+            )
+        ]
+
+        await buildFoothillNavMeshExample(
+            on: container,
+            terrainFile: "foothill",
+            display: .both,
+            splatFiles: ["roads_splat", "water_splat"],
+            splatRotationDegrees: 0.0,
+            areaCodeConfig: areaConfig,
+            exportDirectory: "/path/to/export"
+        )
+        */
 
         // The builder added its own root under `container`.
         guard let root = container.children.first else { return }

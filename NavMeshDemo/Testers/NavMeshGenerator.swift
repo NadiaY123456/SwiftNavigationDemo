@@ -18,7 +18,9 @@ public enum DisplayOption {
  • `FoothillDisplayOption.none` — render nothing, useful if you only want export stats/OBJ.
  • `terrainFile` (String) — accepts either a USDZ/RealityKit model **name** *or* an absolute/relative
    path to an `.obj`.  The terrain source is inferred from the file‑extension.
- • `splatFile` and `splatRotationDegrees` inputs so callers can swap textures or orientations easily.
+ • `splatFiles` ([String]) — array of splat texture filenames. If empty, generates navmesh without custom areas.
+ • `splatRotationDegrees` inputs so callers can swap textures or orientations easily (applies to all splats).
+ • `areaCodeConfig` ([SplatAreaConfig]?) — optional configuration for area codes per splat/channel. If nil, auto-generates from 2 upwards.
  */
 
 // MARK: Visual toggle
@@ -30,13 +32,27 @@ public enum FoothillDisplayOption {
     case none
 }
 
+// MARK: Area Code Configuration
+
+/// Configuration for area codes in a splat image
+public struct SplatAreaConfig {
+    public let splatName: String
+    public let channelAreaCodes: [(channel: SplatMeshGenerator.Channel, areaCode: UInt8)]
+    
+    public init(splatName: String, channelAreaCodes: [(channel: SplatMeshGenerator.Channel, areaCode: UInt8)]) {
+        self.splatName = splatName
+        self.channelAreaCodes = channelAreaCodes
+    }
+}
+
 @MainActor
 public func buildFoothillNavMeshExample(
     on spaceOrigin: Entity,
     terrainFile: String,
     display: FoothillDisplayOption = .both,
-    splatFile: String = "splat_rgba",
+    splatFiles: [String] = ["splat_rgba"], // Now an array, defaults to single splat for backward compatibility
     splatRotationDegrees: CGFloat = 90.0,
+    areaCodeConfig: [SplatAreaConfig]? = nil, // Optional area code configuration
     exportDirectory: String
 ) async {
     // ────────────────────────────────────────────────
@@ -67,25 +83,63 @@ public func buildFoothillNavMeshExample(
     var geometry: NavMeshGeometry?
     if showNavMesh {
         // ────────────────────────────────────────────────
-        // Load + rotate the splat texture
+        // Process splat files (if any)
         // ────────────────────────────────────────────────
-        guard let originalSplat = UIImage(named: splatFile) else {
-            print("❌ Failed to load splat \(splatFile)"); return
+        var splatDescriptors: [NavMeshGenerator.SplatDescriptor] = []
+        
+        if !splatFiles.isEmpty {
+            var currentAreaCode: UInt8 = 2 // Start auto-generation from 2
+            
+            for (index, splatFile) in splatFiles.enumerated() {
+                guard let originalSplat = UIImage(named: splatFile) else {
+                    print("❌ Failed to load splat \(splatFile) - skipping")
+                    continue
+                }
+                
+                // Apply rotation to splat
+                let rotatedSplat: UIImage
+                switch Int(splatRotationDegrees) % 360 {
+                case 0: rotatedSplat = originalSplat
+                case 90: rotatedSplat = originalSplat.rotated90Clockwise()!
+                case 270: rotatedSplat = originalSplat.rotated90CounterClockwise()!
+                default: rotatedSplat = originalSplat.rotated(degrees: splatRotationDegrees) ?? originalSplat
+                }
+                
+                // Determine channels and area codes for this splat
+                var channels: [NavMeshGenerator.SplatDescriptor.ChannelInfo] = []
+                
+                if let config = areaCodeConfig?.first(where: { $0.splatName == splatFile }) {
+                    // Use provided area codes
+                    for (channel, areaCode) in config.channelAreaCodes {
+                        channels.append(NavMeshGenerator.SplatDescriptor.ChannelInfo(
+                            channel: channel,
+                            areaCode: areaCode
+                        ))
+                    }
+                } else {
+                    // Auto-generate area codes for common channels
+                    // Default: use green and blue channels if they exist
+                    let defaultChannels: [SplatMeshGenerator.Channel] = [.green, .blue]
+                    for channel in defaultChannels {
+                        channels.append(NavMeshGenerator.SplatDescriptor.ChannelInfo(
+                            channel: channel,
+                            areaCode: currentAreaCode
+                        ))
+                        currentAreaCode += 1
+                    }
+                }
+                
+                if !channels.isEmpty {
+                    let splatDesc = NavMeshGenerator.SplatDescriptor(
+                        name: "\(splatFile)_splat",
+                        image: rotatedSplat,
+                        channels: channels
+                    )
+                    splatDescriptors.append(splatDesc)
+                    print("Added splat '\(splatFile)' with \(channels.count) channels")
+                }
+            }
         }
-        let rotatedSplat: UIImage
-        switch Int(splatRotationDegrees) % 360 {
-        case 0: rotatedSplat = originalSplat
-        case 90: rotatedSplat = originalSplat.rotated90Clockwise()!
-        case 270: rotatedSplat = originalSplat.rotated90CounterClockwise()!
-        default: rotatedSplat = originalSplat.rotated(degrees: splatRotationDegrees) ?? originalSplat
-        }
-        let roadChannel = NavMeshGenerator.SplatDescriptor.ChannelInfo(channel: .green, areaCode: 2)
-        let waterChannel = NavMeshGenerator.SplatDescriptor.ChannelInfo(channel: .blue, areaCode: 3)
-        let splatDesc = NavMeshGenerator.SplatDescriptor(
-            name: "\(splatFile)_splat",
-            image: rotatedSplat,
-            channels: [waterChannel, roadChannel]
-        )
 
         // ────────────────────────────────────────────────
         // Build the NavMesh
@@ -94,7 +148,7 @@ public func buildFoothillNavMeshExample(
         do {
             navMesh = try await NavMeshGenerator.makeNavMesh(
                 terrain: terrainSource,
-                splats: [splatDesc],
+                splats: splatDescriptors, // Will be empty array if no splats
                 config: customNavMeshConfig,
                 agentHeight: 2.0,
                 agentRadius: 0.5,
@@ -266,6 +320,8 @@ public func buildFoothillNavMeshExample(
     spaceOrigin.addChild(root)
     print("✅ buildFoothillNavMeshExample complete – displayed: \(display)")
 }
+
+
 
 /// Utility for building a Detour NavMesh from an OBJ or RealityKit terrain and one or more splat mask images,
 /// each with custom area codes per channel.
