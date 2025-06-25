@@ -38,6 +38,8 @@ struct ImmersiveView: View {
     // NavMesh query components
     @State private var navMesh: NavMesh?
     @State private var navQuery: NavMeshQuery?
+    @State private var queryFilter: NavQueryFilter?
+    @State private var areaConfig: [SplatAreaConfig] = []
 
     var body: some View {
         RealityView { content in
@@ -63,8 +65,23 @@ struct ImmersiveView: View {
         // Attach an empty container to world origin
         spaceOrigin.addChild(container)
 
-        // Build *both* visuals so scale/camera are correct,
-        // even if the user immediately hides one of them.
+        // Configure areas for your splat_rgba file
+        // Green channel = roads (low cost)
+        // Blue channel = lakes (very high cost, effectively impassable)
+        areaConfig = [
+            SplatAreaConfig(
+                splatName: "splat_rgba",
+                channelConfigs: [
+                    // Green channel: Roads - preferred paths with low cost
+                    SplatAreaConfig.ChannelConfig(channel: .green, areaCode: 2, cost: 0.3),
+                    // Blue channel: Lakes - very high cost (agents will avoid)
+                    SplatAreaConfig.ChannelConfig(channel: .blue, areaCode: 3, exclude: true)
+                    // You can add red/alpha channels if needed:
+                    // SplatAreaConfig.ChannelConfig(channel: .red, areaCode: 4, cost: 2.0),
+                    // SplatAreaConfig.ChannelConfig(channel: .alpha, areaCode: 5, cost: 3.0)
+                ]
+            )
+        ]
 
         let splatFiles = ["splat_rgba"]
         //        let splatFiles: [String] = []
@@ -75,12 +92,13 @@ struct ImmersiveView: View {
         let exportDir = "/Users/nata/Library/CloudStorage/OneDrive-Personal/CNC/VisionPro/World/"
 
         // Store the NavMesh for path queries
-        let (navMeshResult, contentRootResult) = await buildFoothillNavMeshExample(
+        let (navMeshResult, _) = await buildFoothillNavMeshExample(
             on: container,
             terrainFile: terrainFileUSDZ,
             display: .both,
             splatFiles: splatFiles,
             splatRotationDegrees: 90,
+            areaCodeConfig: areaConfig,
             exportDirectory: exportDir
         )
 
@@ -89,7 +107,23 @@ struct ImmersiveView: View {
             // Create query for pathfinding
             do {
                 navQuery = try mesh.makeQuery()
-                print("✅ NavMeshQuery created successfully")
+
+                // Create and configure the query filter with area costs
+                let qFilter = NavQueryFilter()
+                qFilter.configure(with: areaConfig) // set per-area costs
+                navQuery?.filter = qFilter // make the query use it
+                queryFilter = qFilter // keep a reference if you need it
+
+                // Automatically report the query’s channel flags
+                print("✅ NavMeshQuery created with area costs:")
+                // Loop through your areaConfig to reflect whatever channels & costs you set
+                for cfg in areaConfig {
+                    for ch in cfg.channelConfigs {
+                        let exclText = ch.exclude ? " (excluded)" : ""
+                        print("   - \(ch.channel): areaCode = \(ch.areaCode), cost = \(ch.cost)\(exclText)")
+                    }
+                }
+
             } catch {
                 print("❌ Failed to create NavMeshQuery: \(error)")
             }
@@ -105,58 +139,6 @@ struct ImmersiveView: View {
 
         sceneBuilt = true
     }
-
-    // MARK: - Example Usage
-
-    /*
-     // Example 1: No splats (generates navmesh without custom areas)
-     await buildFoothillNavMeshExample(
-         on: container,
-         terrainFile: "foothill",
-         display: .both,
-         splatFiles: [],  // Empty array - no custom areas
-         exportDirectory: "/path/to/export"
-     )
-
-     // Example 2: Single splat with default area codes (auto-generated starting from 2)
-     await buildFoothillNavMeshExample(
-         on: container,
-         terrainFile: "foothill",
-         display: .both,
-         splatFiles: ["splat_rgba"],
-         splatRotationDegrees: 90.0,
-         exportDirectory: "/path/to/export"
-     )
-
-     // Example 3: Multiple splats with custom area codes
-     let areaConfig = [
-         SplatAreaConfig(
-             splatName: "roads_splat",
-             channelAreaCodes: [
-                 (.red, 2),    // Roads
-                 (.green, 3)   // Sidewalks
-             ]
-         ),
-         SplatAreaConfig(
-             splatName: "water_splat",
-             channelAreaCodes: [
-                 (.blue, 4)    // Water bodies
-             ]
-         )
-     ]
-
-     await buildFoothillNavMeshExample(
-         on: container,
-         terrainFile: "foothill",
-         display: .both,
-         splatFiles: ["roads_splat", "water_splat"],
-         splatRotationDegrees: 0.0,
-         areaCodeConfig: areaConfig,
-         exportDirectory: "/path/to/export"
-     )
-     */
-
-    // MARK: – Toggle visibility without regenerating
 
     // MARK: – Path Generation
 

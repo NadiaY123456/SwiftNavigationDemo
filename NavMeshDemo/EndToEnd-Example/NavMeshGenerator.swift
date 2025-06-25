@@ -32,18 +32,7 @@ public enum FoothillDisplayOption {
     case none
 }
 
-// MARK: Area Code Configuration
 
-/// Configuration for area codes in a splat image
-public struct SplatAreaConfig {
-    public let splatName: String
-    public let channelAreaCodes: [(channel: SplatMeshGenerator.Channel, areaCode: UInt8)]
-
-    public init(splatName: String, channelAreaCodes: [(channel: SplatMeshGenerator.Channel, areaCode: UInt8)]) {
-        self.splatName = splatName
-        self.channelAreaCodes = channelAreaCodes
-    }
-}
 
 // MARK: - Modified version that returns NavMesh
 
@@ -113,12 +102,13 @@ public func buildFoothillNavMeshExample(
                 var channels: [NavMeshGenerator.SplatDescriptor.ChannelInfo] = []
 
                 if let config = areaCodeConfig?.first(where: { $0.splatName == splatFile }) {
-                    // Use provided area codes
-                    for (channel, areaCode) in config.channelAreaCodes {
+                    // Use provided area codes (now from channelConfigs)
+                    for channelConfig in config.channelConfigs {
                         channels.append(NavMeshGenerator.SplatDescriptor.ChannelInfo(
-                            channel: channel,
-                            areaCode: areaCode
+                            channel: channelConfig.channel,
+                            areaCode: channelConfig.areaCode
                         ))
+                        print("  - Channel \(channelConfig.channel): area=\(channelConfig.areaCode), cost=\(channelConfig.cost)")
                     }
                 } else {
                     // Auto-generate area codes for common channels

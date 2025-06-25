@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 60;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -19,10 +19,8 @@
 		4172BB952E076FC60046C176 /* splat_rgba.png in Resources */ = {isa = PBXBuildFile; fileRef = 4172BB942E076FC60046C176 /* splat_rgba.png */; };
 		4172BB9A2E084ACE0046C176 /* CrowdTester.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4172BB992E084ACE0046C176 /* CrowdTester.swift */; };
 		4172BB9C2E084D8A0046C176 /* foothill.obj in Resources */ = {isa = PBXBuildFile; fileRef = 4172BB9B2E084D8A0046C176 /* foothill.obj */; };
-		4172BB9E2E088B4E0046C176 /* NavMeshGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4172BB9D2E088B490046C176 /* NavMeshGenerator.swift */; };
 		4172BBA22E08D8D50046C176 /* splatBlue.obj in Resources */ = {isa = PBXBuildFile; fileRef = 4172BBA12E08D8D50046C176 /* splatBlue.obj */; };
 		4172BBA42E08FDEB0046C176 /* splatRed.obj in Resources */ = {isa = PBXBuildFile; fileRef = 4172BBA32E08FDEB0046C176 /* splatRed.obj */; };
-		4172BBA62E09CE1A0046C176 /* CustomConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4172BBA52E09CE120046C176 /* CustomConfig.swift */; };
 		4172BBA82E0A44F30046C176 /* plane_hill.obj in Resources */ = {isa = PBXBuildFile; fileRef = 4172BBA72E0A44F30046C176 /* plane_hill.obj */; };
 		4172BBAC2E0A47600046C176 /* plane_hill_USDZ.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 4172BBAB2E0A47600046C176 /* plane_hill_USDZ.usdz */; };
 		4172BBAE2E0A559E0046C176 /* foothillUSDZ_centered.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 4172BBAD2E0A559E0046C176 /* foothillUSDZ_centered.usdz */; };
@@ -65,10 +63,8 @@
 		4172BB942E076FC60046C176 /* splat_rgba.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = splat_rgba.png; sourceTree = "<group>"; };
 		4172BB992E084ACE0046C176 /* CrowdTester.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrowdTester.swift; sourceTree = "<group>"; };
 		4172BB9B2E084D8A0046C176 /* foothill.obj */ = {isa = PBXFileReference; lastKnownFileType = text; path = foothill.obj; sourceTree = "<group>"; };
-		4172BB9D2E088B490046C176 /* NavMeshGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavMeshGenerator.swift; sourceTree = "<group>"; };
 		4172BBA12E08D8D50046C176 /* splatBlue.obj */ = {isa = PBXFileReference; lastKnownFileType = text; path = splatBlue.obj; sourceTree = "<group>"; };
 		4172BBA32E08FDEB0046C176 /* splatRed.obj */ = {isa = PBXFileReference; lastKnownFileType = text; path = splatRed.obj; sourceTree = "<group>"; };
-		4172BBA52E09CE120046C176 /* CustomConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomConfig.swift; sourceTree = "<group>"; };
 		4172BBA72E0A44F30046C176 /* plane_hill.obj */ = {isa = PBXFileReference; lastKnownFileType = text; path = plane_hill.obj; sourceTree = "<group>"; };
 		4172BBAB2E0A47600046C176 /* plane_hill_USDZ.usdz */ = {isa = PBXFileReference; lastKnownFileType = file; path = plane_hill_USDZ.usdz; sourceTree = "<group>"; };
 		4172BBAD2E0A559E0046C176 /* foothillUSDZ_centered.usdz */ = {isa = PBXFileReference; lastKnownFileType = file; path = foothillUSDZ_centered.usdz; sourceTree = "<group>"; };
@@ -100,6 +96,10 @@
 		4901C6802AB4F9E500FBDBF4 /* undulating.obj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = undulating.obj; path = ../../../recastnavigation/RecastDemo/Bin/Meshes/undulating.obj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		4172BBB32E0C42890046C176 /* EndToEnd-Example */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "EndToEnd-Example"; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
 /* Begin PBXFrameworksBuildPhase section */
 		4901C65D2AB4F65F00FBDBF4 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
@@ -123,8 +123,6 @@
 		41E36E1D2E053708004C6058 /* Testers */ = {
 			isa = PBXGroup;
 			children = (
-				4172BBA52E09CE120046C176 /* CustomConfig.swift */,
-				4172BB9D2E088B490046C176 /* NavMeshGenerator.swift */,
 				4172BB992E084ACE0046C176 /* CrowdTester.swift */,
 				4182F50A2E05C93C0053D065 /* SplatTester.swift */,
 				41E36E1E2E05373F004C6058 /* LoadTester.swift */,
@@ -178,6 +176,7 @@
 			children = (
 				41E36E232E053A57004C6058 /* Main */,
 				4901C67D2AB4F9C700FBDBF4 /* Data */,
+				4172BBB32E0C42890046C176 /* EndToEnd-Example */,
 				41E36E1D2E053708004C6058 /* Testers */,
 				4901C6782AB4F84A00FBDBF4 /* Utilities */,
 				4901C66D2AB4F66000FBDBF4 /* Assets.xcassets */,
@@ -258,6 +257,9 @@
 			buildRules = (
 			);
 			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				4172BBB32E0C42890046C176 /* EndToEnd-Example */,
 			);
 			name = NavMeshDemo;
 			packageProductDependencies = (
@@ -345,7 +347,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4172BBA62E09CE1A0046C176 /* CustomConfig.swift in Sources */,
 				4901C66A2AB4F65F00FBDBF4 /* ContentView.swift in Sources */,
 				4172BB9A2E084ACE0046C176 /* CrowdTester.swift in Sources */,
 				41E36E1F2E053764004C6058 /* LoadTester.swift in Sources */,
@@ -356,7 +357,6 @@
 				41E36E1C2E0536FD004C6058 /* CustomAreaTester.swift in Sources */,
 				4172BBB02E0A59940046C176 /* imageRotattion.swift in Sources */,
 				4901C66C2AB4F65F00FBDBF4 /* ImmersiveView.swift in Sources */,
-				4172BB9E2E088B4E0046C176 /* NavMeshGenerator.swift in Sources */,
 				414DBD222E030B8700B3A142 /* GeometryTester.swift in Sources */,
 				4901C67C2AB4F8A600FBDBF4 /* FakeRandom.swift in Sources */,
 				4172BBB22E0B3FD80046C176 /* PathVisualizer.swift in Sources */,
